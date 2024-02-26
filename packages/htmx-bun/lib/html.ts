@@ -20,6 +20,7 @@ const voidTags = [
 
 interface Doctype {
     type: "doctype";
+    env: Env;
 }
 
 type Env = Record<string, string>;
@@ -77,6 +78,13 @@ export function createText(parent: Parent, content: string): Text {
     };
 }
 
+function createDoctype(parent: Parent): Doctype {
+    return {
+        type: "doctype",
+        env: Object.create(parent.env),
+    };
+}
+
 export type Parent = Root | Element;
 export type Child = Element | Text | Doctype;
 export type Node = Parent | Text | Doctype;
@@ -94,9 +102,7 @@ export function parseHtml(html: string, env?: Env): Root {
 
     parser.on("doctype", (doctype) => {
         const parent = stack[stack.length - 1] as Parent;
-        parent.children.push({
-            type: "doctype",
-        });
+        parent.children.push(createDoctype(parent));
     });
 
     parser.on("startTag", (tag) => {
@@ -113,10 +119,7 @@ export function parseHtml(html: string, env?: Env): Root {
 
     parser.on("text", (text) => {
         const parent = stack[stack.length - 1] as Parent;
-        parent.children.push({
-            type: "text",
-            content: text.text,
-        } as Text);
+        parent.children.push(createText(parent, text.text));
     });
 
     parser.on("endTag", (tag) => {

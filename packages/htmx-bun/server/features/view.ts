@@ -58,6 +58,23 @@ export default async function (options: ServerOptions): Promise<ServerFeature> {
             if (sourceChild.tag === "server") {
                 continue;
             }
+            if (sourceChild.tag === "todo-item") {
+                for (const [key, val] of Object.entries(sourceChild.attrs)) {
+                    if (sourceChild.env._as) {
+                        const match = val.match(/\{(.+?)\}/);
+                        if (match) {
+                            const fn = new Function(
+                                sourceChild.env._as,
+                                `return ${match[1]}`,
+                            );
+                            console.log(sourceChild.env[sourceChild.env._as]);
+                            sourceChild.attrs[key] = fn(
+                                sourceChild.env[sourceChild.env._as],
+                            );
+                        }
+                    }
+                }
+            }
             const view = elements.find((it) => it.tag === sourceChild.tag);
             if (view) {
                 const module = await import(
@@ -87,22 +104,30 @@ export default async function (options: ServerOptions): Promise<ServerFeature> {
                         error("view", "missing 'as' attribute in <each />");
                         continue;
                     }
-                    const count = sourceChild.env[sourceChild.attrs.of].length;
-                    for (let i = 0; i < count; i++) {
+                    sourceChild.env._as = sourceChild.attrs.as;
+                    const items = sourceChild.env[sourceChild.attrs.of];
+                    for (let i = 0; i < items.length; i++) {
                         for (const eachChild of sourceChild.children) {
                             const eachRoot = parseHtml(
                                 serializeHtml(eachChild),
                                 sourceChild.env,
                             );
                             for (const eachRootChild of eachRoot.children) {
-                                targetChildren.push(eachRootChild);
+                                // console.log(
+                                //     sourceChild.attrs.as,
+                                //     eachRootChild.env[sourceChild.attrs.as],
+                                // );
+                                eachRootChild.env[sourceChild.attrs.as] =
+                                    items[i];
+                                // console.log("EACH", eachRootChild);
+                                // console.log(eachRootChild);
+                                targetChildren.push(
+                                    ...(await walk([eachRootChild])),
+                                );
                             }
                         }
                     }
-                    // const children = `
-                    //     ${sourceChild.children.map(serializeHtml).join("")}
-                    // `;
-                    // console.log(children);
+                    continue;
                 }
                 sourceChild.children = await walk(sourceChild.children);
                 targetChildren.push(sourceChild);
