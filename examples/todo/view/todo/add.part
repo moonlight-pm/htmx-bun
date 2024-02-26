@@ -1,0 +1,11 @@
+<input
+    hx-get="/todo/add"
+    hx-swap="none"
+    hx-on::before-request="this.value = ''"
+    class="new-todo"
+    placeholder="What needs to be done?"
+    autofocus
+    autocomplete="off"
+    name="text"
+    value=""
+>

@@ -1,7 +1,8 @@
 import { Glob } from "bun";
 import { existsSync, mkdir } from "fs";
+import { resolve } from "path";
 import { Child, parseHtml, serializeHtml } from "~/lib/html";
-import { info, warn } from "~/lib/log";
+import { error, info, warn } from "~/lib/log";
 import { ServerOptions } from "~/lib/options";
 import { watch } from "~/lib/watch";
 import { ServerFeature } from ".";
@@ -10,7 +11,6 @@ interface View {
     path: string;
     pathname: string;
     tag: string;
-    presentation: string;
     code?: (
         attrs: Record<string, string>,
     ) => Promise<string | undefined> | string | undefined;
@@ -44,7 +44,7 @@ export default async function (options: ServerOptions): Promise<ServerFeature> {
         });
     }
 
-    function walk(sourceChildren: Child[]): Child[] {
+    async function walk(sourceChildren: Child[]): Promise<Child[]> {
         const targetChildren = [];
         for (const sourceChild of sourceChildren) {
             if (sourceChild.type === "doctype") {
@@ -56,30 +56,64 @@ export default async function (options: ServerOptions): Promise<ServerFeature> {
                 continue;
             }
             if (sourceChild.tag === "server") {
-                console.log("SERVER");
-                // Evaluate server code
                 continue;
             }
             const view = elements.find((it) => it.tag === sourceChild.tag);
             if (view) {
-                // XXX: These would go in the slot
-                const slotChildren = sourceChild.children;
-                const presentationChildren = walk(
-                    parseHtml(view.presentation).children,
+                const module = await import(
+                    `${process.cwd()}/view/${view.path}`
                 );
-                console.log(presentationChildren);
+                const { env, presentation } =
+                    await module.default(
+                        // XXX: pass attributes
+                    );
+                // console.log("PRESENTATION", presentation);
+                // console.log("ENV", sourceChild.env, env);
+                Object.assign(sourceChild.env, env);
+                // XXX: These would go in the slot
+                // const slotChildren = sourceChild.children;
+                const presentationChildren = await walk(
+                    parseHtml(presentation, sourceChild.env).children,
+                );
                 targetChildren.push(...presentationChildren);
             } else {
-                sourceChild.children = walk(sourceChild.children);
+                if (sourceChild.tag === "each") {
+                    // console.log("EACH", sourceChild.env);
+                    if (!sourceChild.attrs.of) {
+                        error("view", "missing 'of' attribute in <each />");
+                        continue;
+                    }
+                    if (!sourceChild.attrs.as) {
+                        error("view", "missing 'as' attribute in <each />");
+                        continue;
+                    }
+                    const count = sourceChild.env[sourceChild.attrs.of].length;
+                    for (let i = 0; i < count; i++) {
+                        for (const eachChild of sourceChild.children) {
+                            const eachRoot = parseHtml(
+                                serializeHtml(eachChild),
+                                sourceChild.env,
+                            );
+                            for (const eachRootChild of eachRoot.children) {
+                                targetChildren.push(eachRootChild);
+                            }
+                        }
+                    }
+                    // const children = `
+                    //     ${sourceChild.children.map(serializeHtml).join("")}
+                    // `;
+                    // console.log(children);
+                }
+                sourceChild.children = await walk(sourceChild.children);
                 targetChildren.push(sourceChild);
             }
         }
         return targetChildren;
     }
 
-    function render(content: string): string {
+    async function render(content: string): Promise<string> {
         const root = parseHtml(content);
-        root.children = walk(root.children);
+        root.children = await walk(root.children);
         return serializeHtml(root);
     }
 
@@ -97,8 +131,8 @@ export default async function (options: ServerOptions): Promise<ServerFeature> {
                 attrs.push(`${name}="${value}"`);
             }
             // XXX: Need to handle recursive views.
-            const content = render(
-                `<${element.tag} ${attrs.join(" ")}></${element.tag}>`,
+            const content = await render(
+                `<${element.tag} ${attrs.join(" ")} />`,
             );
             return new Response(content, {
                 headers: {
@@ -140,7 +174,6 @@ async function buildElement(elements: View[], path: string) {
         path,
         pathname: `/${pathname}`,
         tag,
-        presentation: "",
     };
     await reloadElement(element);
     elements.push(element);
@@ -148,5 +181,5 @@ async function buildElement(elements: View[], path: string) {
 
 async function reloadElement(element: View) {
     info("view", `(re)-loading 'view/${element.path}' AKA <${element.tag} />`);
-    element.presentation = await Bun.file(`view/${element.path}`).text();
+    delete require.cache[resolve(`view/${element.path}`)];
 }

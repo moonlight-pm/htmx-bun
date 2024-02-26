@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+    <head>
+        <title>todos</title>
+        <link rel="stylesheet" href="/base.css">
+    </head>
+    <body>
+        <section class="todoapp">
+            <header class="header">
+                <h1>todos</h1>
+                <todo-add></todo-add>
+            </header>
+            <main class="main" style="display: block;">
+                <todo-toggle-all></todo-toggle-all>
+                <todo-list></todo-list>
+            </main>
+            <todo-footer></todo-footer>
+        </section>
+        <footer class="info">
+            <p>Double-click to edit a todo</p>
+            <p>
+                Created by
+                <a href="https://github.com/moonlight-pm/htmx-bun">moonlight(pm)</a>
+            </p>
+            <p>
+                Part of
+                <a href="http://todomvc.com">TodoMVC</a>
+            </p>
+        </footer>
+    </body>
+</html>

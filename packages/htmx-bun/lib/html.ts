@@ -81,11 +81,11 @@ export type Parent = Root | Element;
 export type Child = Element | Text | Doctype;
 export type Node = Parent | Text | Doctype;
 
-export function parseHtml(html: string): Root {
+export function parseHtml(html: string, env?: Env): Root {
     const stack: Node[] = [
         {
             type: "root",
-            env: {},
+            env: env ?? {},
             children: [],
         },
     ];
