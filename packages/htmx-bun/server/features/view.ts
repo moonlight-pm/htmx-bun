@@ -1,16 +1,17 @@
 import { Glob } from "bun";
 import { existsSync, mkdir } from "fs";
-import { debug, error, info, warn } from "~/lib/log";
+import { Child, parseHtml, serializeHtml } from "~/lib/html";
+import { info, warn } from "~/lib/log";
 import { ServerOptions } from "~/lib/options";
 import { watch } from "~/lib/watch";
 import { ServerFeature } from ".";
 
-interface Element {
+interface View {
     path: string;
     pathname: string;
     tag: string;
-    content?: string;
-    template?: (
+    presentation: string;
+    code?: (
         attrs: Record<string, string>,
     ) => Promise<string | undefined> | string | undefined;
 }
@@ -18,7 +19,7 @@ interface Element {
 export default async function (options: ServerOptions): Promise<ServerFeature> {
     const elements = await buildElements();
     const elementRegex = new RegExp(
-        elements.map((it) => `(<${it.tag}[^-])`).join("|"),
+        elements.map((it) => `(<${it.tag}[\s>])`).join("|"),
     );
     if (options?.features?.dev) {
         info("view", "watching 'view' directory...");
@@ -42,55 +43,48 @@ export default async function (options: ServerOptions): Promise<ServerFeature> {
             }
         });
     }
-    // debug("view", "element regexp", elementRegex);
-    // A special rewriter is required to facilitate recursion over the rendered view tree.
-    const rewriter = new HTMLRewriter();
-    rewriter.on("*", {
-        async comments(comment) {
-            comment.remove();
-        },
-        async element(el) {
-            // debug("view", "start element", el.tagName);
-            const element = elements.find((it) => it.tag === el.tagName);
-            if (!element) {
-                return;
-            }
-            let content = element.content;
 
-            if (element.template) {
-                if (el.selfClosing) {
-                    debug("view", "self closing", el.tagName);
-                }
-                const attrs: Record<string, string> = {};
-                for (const [name, value] of el.attributes) {
-                    attrs[name] = value;
-                }
-                try {
-                    content = await element.template(attrs);
-                } catch (e) {
-                    error("view", `Error in template: '${element.tag}'`);
-                    console.error(e);
-                    // XXX: Figure out how to raise error here to return a 500.
-                }
+    function walk(sourceChildren: Child[]): Child[] {
+        const targetChildren = [];
+        for (const sourceChild of sourceChildren) {
+            if (sourceChild.type === "doctype") {
+                targetChildren.push(sourceChild);
+                continue;
             }
-            if (!content) {
-                el.remove();
-                return;
+            if (sourceChild.type === "text") {
+                targetChildren.push(sourceChild);
+                continue;
             }
-            const re = new RegExp(`<${element.tag}[^-]`);
-            if (content.match(re)) {
-                warn("view", `Recursive view: '${element.tag}', removing...`);
-                el.remove();
-                return;
+            if (sourceChild.tag === "server") {
+                console.log("SERVER");
+                // Evaluate server code
+                continue;
             }
-            // console.log(content);
-            // el.remove();
-            // el.after(content, { html: true });
-            el.replace(content, { html: true });
-            // debug("view", "end element", el.tagName);
-        },
-    });
+            const view = elements.find((it) => it.tag === sourceChild.tag);
+            if (view) {
+                // XXX: These would go in the slot
+                const slotChildren = sourceChild.children;
+                const presentationChildren = walk(
+                    parseHtml(view.presentation).children,
+                );
+                console.log(presentationChildren);
+                targetChildren.push(...presentationChildren);
+            } else {
+                sourceChild.children = walk(sourceChild.children);
+                targetChildren.push(sourceChild);
+            }
+        }
+        return targetChildren;
+    }
+
+    function render(content: string): string {
+        const root = parseHtml(content);
+        root.children = walk(root.children);
+        return serializeHtml(root);
+    }
+
     return {
+        name: "view",
         async fetch(request) {
             const url = new URL(request.url);
             const pathname = url.pathname === "/" ? "/index" : url.pathname;
@@ -102,15 +96,10 @@ export default async function (options: ServerOptions): Promise<ServerFeature> {
             for (const [name, value] of url.searchParams) {
                 attrs.push(`${name}="${value}"`);
             }
-            let content = rewriter.transform(
+            // XXX: Need to handle recursive views.
+            const content = render(
                 `<${element.tag} ${attrs.join(" ")}></${element.tag}>`,
             );
-            // console.log(content, elementRegex);
-            // debug("view", "pre-recursive content", content);
-            while (content.match(elementRegex)) {
-                content = rewriter.transform(content);
-                // debug("view", "post-recursive content", content);
-            }
             return new Response(content, {
                 headers: {
                     "Content-Type": "text/html;charset=utf-8",
@@ -121,19 +110,19 @@ export default async function (options: ServerOptions): Promise<ServerFeature> {
 }
 
 async function buildElements() {
-    const elements: Element[] = [];
+    const elements: View[] = [];
     if (!existsSync("view")) {
         info("view", "creating 'view' directory");
         mkdir("view", { recursive: true }, () => {});
     }
-    for await (const path of new Glob("**/*.{html,ts}").scan("view")) {
+    for await (const path of new Glob("**/*.part").scan("view")) {
         await buildElement(elements, path);
     }
     return elements;
 }
 
-async function buildElement(elements: Element[], path: string) {
-    const pathname = path.replace(/(\.ts|\.html)/g, "");
+async function buildElement(elements: View[], path: string) {
+    const pathname = path.replace(/\.part/g, "");
     let tag = pathname.replace(/\//g, "-");
     if (tag === "index") {
         tag = "root";
@@ -147,23 +136,17 @@ async function buildElement(elements: Element[], path: string) {
         warn("view", `Using 'view/${existingTag.path}'`);
         return;
     }
-    const element: Element = {
+    const element: View = {
         path,
         pathname: `/${pathname}`,
         tag,
+        presentation: "",
     };
     await reloadElement(element);
     elements.push(element);
 }
 
-async function reloadElement(element: Element) {
+async function reloadElement(element: View) {
     info("view", `(re)-loading 'view/${element.path}' AKA <${element.tag} />`);
-    if (element.path.endsWith(".html")) {
-        element.content = await Bun.file(`view/${element.path}`).text();
-    }
-    if (element.path.endsWith(".ts")) {
-        element.template = (
-            await import(Bun.resolveSync(`./view/${element.path}`, "."))
-        ).default;
-    }
+    element.presentation = await Bun.file(`view/${element.path}`).text();
 }

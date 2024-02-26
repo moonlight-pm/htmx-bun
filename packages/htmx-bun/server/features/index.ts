@@ -7,6 +7,7 @@ export type FeatureFactory = (
 ) => Promise<ServerFeature> | ServerFeature;
 
 export interface ServerFeature {
+    name: string;
     fetch?: (
         request: Request,
     ) => Promise<Response | undefined> | Response | undefined;

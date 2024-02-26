@@ -3,6 +3,7 @@ import { ServerFeature } from ".";
 
 export default function (): ServerFeature {
     return {
+        name: "sse",
         async fetch(request) {
             const url = new URL(request.url);
 

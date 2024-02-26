@@ -22,36 +22,42 @@ interface Doctype {
     type: "doctype";
 }
 
-interface Root {
+type Env = Record<string, string>;
+
+export interface Root {
     type: "root";
-    content: Node[];
+    env: Env;
+    children: Child[];
 }
 
 export interface Element {
     type: "element";
+    env: Env;
     tag: string;
     attrs: Record<string, string>;
-    content: Node[];
+    children: Child[];
     append: (
         tag: string,
         attrs: Record<string, string>,
-        ...content: (Element | Text)[]
+        ...children: (Element | Text)[]
     ) => Element;
 }
 
 function createElement(
+    parent: Parent,
     tag: string,
     attrs: Record<string, string> = {},
-    ...content: (Element | Text)[]
+    ...children: (Element | Text)[]
 ): Element {
     return {
         type: "element",
+        env: Object.create(parent.env),
         tag,
         attrs,
-        content,
+        children,
         append(tag, attrs = {}, ...content) {
-            const element = createElement(tag, attrs, ...content);
-            this.content.push(element);
+            const element = createElement(this, tag, attrs, ...content);
+            this.children.push(element);
             return element;
         },
     };
@@ -59,17 +65,28 @@ function createElement(
 
 interface Text {
     type: "text";
+    env: Env;
     content: string;
 }
 
-type Parent = Root | Element;
-type Node = Parent | Text | Doctype;
+export function createText(parent: Parent, content: string): Text {
+    return {
+        type: "text",
+        env: Object.create(parent.env),
+        content,
+    };
+}
+
+export type Parent = Root | Element;
+export type Child = Element | Text | Doctype;
+export type Node = Parent | Text | Doctype;
 
 export function parseHtml(html: string): Root {
     const stack: Node[] = [
         {
             type: "root",
-            content: [],
+            env: {},
+            children: [],
         },
     ];
 
@@ -77,7 +94,7 @@ export function parseHtml(html: string): Root {
 
     parser.on("doctype", (doctype) => {
         const parent = stack[stack.length - 1] as Parent;
-        parent.content.push({
+        parent.children.push({
             type: "doctype",
         });
     });
@@ -87,8 +104,8 @@ export function parseHtml(html: string): Root {
         const attrs = Object.fromEntries(
             tag.attrs.map((attr) => [attr.name, attr.value]),
         );
-        const node = createElement(tag.tagName, attrs);
-        parent.content.push(node);
+        const node = createElement(parent, tag.tagName, attrs);
+        parent.children.push(node);
         if (!tag.selfClosing && !voidTags.includes(tag.tagName)) {
             stack.push(node);
         }
@@ -96,7 +113,7 @@ export function parseHtml(html: string): Root {
 
     parser.on("text", (text) => {
         const parent = stack[stack.length - 1] as Parent;
-        parent.content.push({
+        parent.children.push({
             type: "text",
             content: text.text,
         } as Text);
@@ -115,11 +132,11 @@ export function serializeHtml(node: Node): string {
         case "doctype":
             return "<!DOCTYPE html>";
         case "root":
-            return format(node.content.map(serializeHtml).join(""), "    ");
+            return format(node.children.map(serializeHtml).join(""), "    ");
         case "element":
             return `<${node.tag}${Object.entries(node.attrs)
                 .map(([key, value]) => ` ${key}="${value}"`)
-                .join("")}>${node.content.map(serializeHtml).join("")}${
+                .join("")}>${node.children.map(serializeHtml).join("")}${
                 voidTags.includes(node.tag) ? "" : `</${node.tag}>`
             }`;
         case "text":
@@ -132,7 +149,7 @@ export function walkHtml(
     callback: (node: Element) => void,
 ): Parent | string {
     const node = typeof input === "string" ? parseHtml(input) : input;
-    for (const child of node.content) {
+    for (const child of node.children) {
         if (child.type === "element") {
             callback(child);
             walkHtml(child, callback);

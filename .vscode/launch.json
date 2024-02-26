@@ -4,13 +4,21 @@
         {
             "type": "extensionHost",
             "request": "launch",
-            "name": "Launch Client",
+            "name": "Debug Extension: Language",
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceRoot}/packages/vscode",
                 "--folder-uri=${workspaceRoot}/examples/todo"
             ],
             "autoAttachChildProcesses": true
+        },
+        {
+            "type": "bun",
+            "request": "launch",
+            "name": "Debug Example: Todo",
+            "program": "${workspaceRoot}/packages/htmx-bun/bin/htmx-bun.ts",
+            "cwd": "${workspaceRoot}/examples/todo",
+            "watchMode": "hot"
         }
     ]
 }

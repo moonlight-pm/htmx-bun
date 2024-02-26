@@ -20,6 +20,7 @@ export function buildFetch(features: ServerFeature[]) {
         let response: Response | undefined;
 
         for (const feature of features) {
+            console.log("fetch", feature.name, request.url);
             response = await feature.fetch?.(request);
             if (response) {
                 break;

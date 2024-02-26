@@ -22,6 +22,7 @@ export default function (): ServerFeature {
     });
 
     return {
+        name: "dev",
         async fetch(request) {
             const url = new URL(request.url);
             const pathname = url.pathname;
