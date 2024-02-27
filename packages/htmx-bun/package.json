@@ -5,6 +5,9 @@
     "bin": {
         "htmx-bun": "./bin/htmx-bun.ts"
     },
+    "scripts": {
+        "test": "bun test -r view/plugin.ts"
+    },
     "dependencies": {
         "acorn": "^8.11.3",
         "autoprefixer": "^10.4.17",
@@ -16,6 +19,7 @@
         "html-format": "^1.1.6",
         "parse5-sax-parser": "^7.0.0",
         "postcss": "^8.4.35",
+        "prettier": "^3.2.5",
         "ramda": "^0.29.1",
         "tailwindcss": "^3.4.1",
         "type-fest": "^4.10.2"

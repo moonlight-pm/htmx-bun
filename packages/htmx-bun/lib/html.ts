@@ -1,7 +1,7 @@
 import format from "html-format";
 import { SAXParser } from "parse5-sax-parser";
 
-const voidTags = [
+export const voidTags = [
     "area",
     "base",
     "br",

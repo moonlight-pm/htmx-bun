@@ -4,11 +4,22 @@
         {
             "type": "extensionHost",
             "request": "launch",
-            "name": "Debug Extension: Language",
+            "name": "Debug language extension in Todo example",
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceRoot}/packages/vscode",
                 "--folder-uri=${workspaceRoot}/examples/todo"
+            ],
+            "autoAttachChildProcesses": true
+        },
+        {
+            "type": "extensionHost",
+            "request": "launch",
+            "name": "Debug language extension in view fixtures",
+            "runtimeExecutable": "${execPath}",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceRoot}/packages/vscode",
+                "--folder-uri=${workspaceRoot}/packages/htmx-bun/view/fixtures"
             ],
             "autoAttachChildProcesses": true
         },
