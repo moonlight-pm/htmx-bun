@@ -13,4 +13,9 @@ test("formatHtml", async () => {
     expect(pretty).toBe(
         "<div>\n    <span>Muppim, Huppim and Ard</span>\n</div>\n",
     );
+
+    // Has some brackets
+    const brackets1 = "<div id={id}></div>";
+    const brackets2 = `<div id="{id}"></div>\n`;
+    expect(await formatHtml(brackets1)).toBe(brackets2);
 });

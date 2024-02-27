@@ -1,13 +1,10 @@
-// import { expect, test } from "bun:test";
-// import { ViewRegister } from "./register";
+import { expect, test } from "bun:test";
+import { TemplateRegister } from "./register";
 
-// test("View:render", async () => {
-//     const register = new ViewRegister("./view/fixtures");
-//     await register.initialize();
-//     const ugly = register.get("ugly");
-//     const html = await ugly.render();
-//     expect(html).toBe(
-//         "<div>\n    <span>Muppim, Huppim and Ard</span>\n</div>\n",
-//     );
-//     console.log(html);
-// });
+test("extracts()", async () => {
+    const register = new TemplateRegister("./view/fixtures");
+    await register.initialize();
+    const template = register.get("todo-item");
+    const extracts = template.extracts();
+    expect(extracts.length).toEqual(2);
+});

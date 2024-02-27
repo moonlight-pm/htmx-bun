@@ -15,7 +15,8 @@
                 "all": false
             },
             "suspicious": {
-                "noUnsafeDeclarationMerging": "off"
+                "noUnsafeDeclarationMerging": "off",
+                "noAssignInExpressions": "off"
             }
         }
     },
