@@ -22,7 +22,7 @@ export class Template {
     }
 
     extracts(): Extract[] {
-        console.log(this.module.presentation);
+        // console.log(this.module.presentation);
         const results = [];
         const re = /\$ext\d+/g;
         let match: RegExpExecArray | null;

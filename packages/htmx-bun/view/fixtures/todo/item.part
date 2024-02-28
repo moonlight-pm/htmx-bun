@@ -1,1 +1,8 @@
-<li id={item.id}>{item.name}</li>
+<server>
+    interface Attributes {
+        id: string;
+        name: string;
+    }
+</server>
+
+<li id={id}>{name}</li>

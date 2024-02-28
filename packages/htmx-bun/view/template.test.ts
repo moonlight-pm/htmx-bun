@@ -7,4 +7,5 @@ test("extracts()", async () => {
     const template = register.get("todo-item");
     const extracts = template.extracts();
     expect(extracts.length).toEqual(2);
+    // console.log(extracts);
 });

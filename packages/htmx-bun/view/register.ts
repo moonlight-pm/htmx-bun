@@ -1,8 +1,7 @@
 import { Glob } from "bun";
 import { resolve } from "path";
 import { warn } from "~/lib/log";
-import { TemplateModule } from "./function";
-import { Template } from "./template";
+import { Template, TemplateModule } from "./template";
 
 export class TemplateRegister {
     templates: Record<string, Template> = {};

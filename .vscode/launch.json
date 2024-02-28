@@ -30,6 +30,15 @@
             "program": "${workspaceRoot}/packages/htmx-bun/bin/htmx-bun.ts",
             "cwd": "${workspaceRoot}/examples/todo",
             "watchMode": "hot"
+        },
+        {
+            "type": "bun",
+            "request": "launch",
+            "name": "Debug View Tests",
+            "runtimeArgs": ["test", "-r", "view/plugin.ts"],
+            "program": "${workspaceRoot}/packages/htmx-bun/view/template.test.ts",
+            "cwd": "${workspaceRoot}/packages/htmx-bun",
+            "watchMode": "hot"
         }
     ]
 }

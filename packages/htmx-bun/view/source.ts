@@ -1,4 +1,5 @@
 import { SAXParser } from "parse5-sax-parser";
+import * as ts from "typescript";
 import { formatHtml, formatTypeScript } from "./lib/format";
 
 /**
@@ -20,10 +21,13 @@ export class Source {
         const text = await Bun.file(this.path).text();
         await this.parse(text);
         const html = await formatHtml(this.html.join(""));
-        const code = await formatTypeScript(`
+        let code = this.code.join("\n");
+        const meta = extractMeta(code);
+        code = await formatTypeScript(`
+            export const meta = ${JSON.stringify(meta)};
             export const presentation = ${JSON.stringify(html)};
 
-            ${this.code.join("\n")}
+            ${code}
         `);
         return code;
     }
@@ -86,9 +90,8 @@ export class Source {
         const marks = markCode(text);
         let i = 0;
         for (const mark of marks) {
-            console.log("INTERPOLATE", this.interpolationIndex, mark.code);
             this.code.push(
-                `const $ext${this.interpolationIndex} = () => (${mark.code})`,
+                `export const $ext${this.interpolationIndex} = (env) => (${mark.code});`,
             );
             this.html.push(text.slice(i, mark.start));
             this.html.push(`$ext${this.interpolationIndex}`);
@@ -99,6 +102,61 @@ export class Source {
     }
 }
 
+/**
+ * Represents the metadata for a source.
+ */
+interface Meta {
+    attributes: Record<string, string>;
+}
+
+/**
+ * Extracts meta information from the provided code.
+ * @param code The code to extract meta information from.
+ * @returns The extracted meta information.
+ */
+function extractMeta(code: string) {
+    const meta: Meta = { attributes: {} };
+    const source = ts.createSourceFile("", code, ts.ScriptTarget.Latest, true);
+    ts.forEachChild(source, (node) => {
+        if (
+            ts.isInterfaceDeclaration(node) &&
+            node.name.text === "Attributes"
+        ) {
+            for (const member of node.members) {
+                if (ts.isPropertySignature(member) && member.type) {
+                    meta.attributes[member.name.getText()] =
+                        member.type.getText();
+                }
+            }
+        }
+    });
+    return meta;
+}
+
+// function prefixReferences(code: string): string {
+//     const sourceFile = ts.createSourceFile("", code, ts.ScriptTarget.Latest, true);
+
+//     const transformer: ts.TransformerFactory<ts.Node> = (context) => {
+//         return (rootNode) => {
+//             function visit(inNode: ts.Node): ts.Node {
+//                 const node = ts.visitEachChild(inNode, visit, context);
+//                 if (ts.isIdentifier(node)) {
+//                     return context.factory.createIdentifier(`env.${node.text}`);
+//                 }
+//                 return node;
+//             }
+//             return ts.visitNode(rootNode, visit);
+//         };
+//     };
+
+//     const result = ts.transform(sourceFile, [transformer]);
+//     const printer = ts.createPrinter();
+//     return printer.printFile(result.transformed[0] as ts.SourceFile);
+// }
+
+/**
+ * Locates a delimited code section in an html file.
+ */
 interface CodeMark {
     start: number;
     end: number;
