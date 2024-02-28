@@ -91,8 +91,11 @@ export class Source {
         let i = 0;
         for (const mark of marks) {
             this.code.push(
-                `export const $ext${this.interpolationIndex} = (env) => (${mark.code});`,
+                `export const $ext${
+                    this.interpolationIndex
+                } = (env) => (${prefixReferences(mark.code)})`,
             );
+            console.log("CODE", this.code[this.code.length - 1]);
             this.html.push(text.slice(i, mark.start));
             this.html.push(`$ext${this.interpolationIndex}`);
             i = mark.end;
@@ -133,26 +136,55 @@ function extractMeta(code: string) {
     return meta;
 }
 
-// function prefixReferences(code: string): string {
-//     const sourceFile = ts.createSourceFile("", code, ts.ScriptTarget.Latest, true);
+/**
+ * Applies an 'env.' prefix to references in the given code.
+ *
+ * @param code The code to be transformed.
+ * @returns The transformed code with prefixed references.
+ */
+function prefixReferences(code: string): string {
+    const sourceFile = ts.createSourceFile(
+        "",
+        code,
+        ts.ScriptTarget.Latest,
+        true,
+    );
 
-//     const transformer: ts.TransformerFactory<ts.Node> = (context) => {
-//         return (rootNode) => {
-//             function visit(inNode: ts.Node): ts.Node {
-//                 const node = ts.visitEachChild(inNode, visit, context);
-//                 if (ts.isIdentifier(node)) {
-//                     return context.factory.createIdentifier(`env.${node.text}`);
-//                 }
-//                 return node;
-//             }
-//             return ts.visitNode(rootNode, visit);
-//         };
-//     };
+    const transformer: ts.TransformerFactory<ts.Node> = (context) => {
+        return (rootNode) => {
+            function visit(inNode: ts.Node): ts.Node {
+                const node = ts.visitEachChild(inNode, visit, context);
+                if (ts.isIdentifier(node)) {
+                    if (ts.isExpressionStatement(node.parent)) {
+                        return context.factory.createPropertyAccessExpression(
+                            context.factory.createIdentifier("env"),
+                            node,
+                        );
+                    }
+                    if (ts.isPropertyAccessExpression(node.parent)) {
+                        if (node.parent.expression === node) {
+                            return context.factory.createPropertyAccessExpression(
+                                context.factory.createIdentifier("env"),
+                                node,
+                            );
+                        }
+                    }
+                }
+                return node;
+            }
+            return ts.visitNode(rootNode, visit);
+        };
+    };
 
-//     const result = ts.transform(sourceFile, [transformer]);
-//     const printer = ts.createPrinter();
-//     return printer.printFile(result.transformed[0] as ts.SourceFile);
-// }
+    const result = ts.transform(sourceFile, [transformer]);
+    const transformed = result.transformed[0] as ts.SourceFile;
+    const printer = ts.createPrinter({ omitTrailingSemicolon: true });
+    return printer.printNode(
+        ts.EmitHint.Unspecified,
+        transformed.statements[0],
+        sourceFile,
+    );
+}
 
 /**
  * Locates a delimited code section in an html file.
