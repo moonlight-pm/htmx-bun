@@ -29,6 +29,7 @@ export class Source {
 
             ${code}
         `);
+        // console.log(code);
         return code;
     }
 
@@ -107,7 +108,7 @@ export class Source {
 /**
  * Represents the metadata for a source.
  */
-interface Meta {
+export interface Meta {
     attributes: Record<string, string>;
 }
 
@@ -151,16 +152,20 @@ function prefixReferences(code: string): string {
 
     const transformer: ts.TransformerFactory<ts.Node> = (context) => {
         return (rootNode) => {
+            let originalExpression: ts.Expression | ts.Identifier =
+                ts.factory.createIdentifier("x");
             function visit(inNode: ts.Node): ts.Node {
                 const node = ts.visitEachChild(inNode, visit, context);
                 if (ts.isIdentifier(node)) {
                     if (ts.isExpressionStatement(node.parent)) {
+                        originalExpression = node;
                         return context.factory.createPropertyAccessExpression(
                             context.factory.createIdentifier("env"),
                             node,
                         );
                     }
                     if (ts.isPropertyAccessExpression(node.parent)) {
+                        originalExpression = node.parent;
                         if (node.parent.expression === node) {
                             return context.factory.createPropertyAccessExpression(
                                 context.factory.createIdentifier("env"),
@@ -171,7 +176,19 @@ function prefixReferences(code: string): string {
                 }
                 return node;
             }
-            return ts.visitNode(rootNode, visit);
+            const source = ts.visitNode(rootNode, visit) as ts.SourceFile;
+            const statement = source.statements[0] as ts.ExpressionStatement;
+            const modifiedExpression = statement.expression;
+            const binaryExpression = ts.factory.createBinaryExpression(
+                modifiedExpression,
+                ts.factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+                originalExpression,
+            );
+            return ts.factory.createSourceFile(
+                [ts.factory.createExpressionStatement(binaryExpression)],
+                ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
+                source.flags,
+            );
         };
     };
 

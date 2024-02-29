@@ -1,6 +1,10 @@
 import { SAXParser } from "parse5-sax-parser";
 import { formatHtml } from "~/lib/format";
 
+/**
+ * An array of void tag names.
+ * Void tags are HTML tags that do not require a closing tag.
+ */
 export const voidTags = [
     "area",
     "base",
@@ -18,14 +22,15 @@ export const voidTags = [
     "wbr",
 ];
 
-export type Root = {
-    type: "root";
-    children: Child[];
+export type Fragment = {
+    type: "fragment";
+    parent?: Parent;
+    children: Node[];
 };
 
 export type Doctype = {
     type: "doctype";
-    parent: Root;
+    parent: Fragment;
 };
 
 export type Text = {
@@ -42,19 +47,18 @@ export type Attribute = {
 export type Element = {
     type: "element";
     parent: Parent;
-    children: Child[];
+    children: Node[];
     tag: string;
     void: boolean;
     attrs: Attribute[];
 };
 
-export type Node = Root | Doctype | Element | Text;
-export type Parent = Root | Element;
-export type Child = Doctype | Element | Text;
+export type Node = Fragment | Doctype | Element | Text;
+export type Parent = Fragment | Element;
 
-const createRoot = (): Root => ({
-    type: "root",
-    children: [],
+export const createFragment = (...children: Node[]): Fragment => ({
+    type: "fragment",
+    children,
 });
 
 const createElement = (
@@ -77,13 +81,13 @@ const createText = (parent: Parent, content: string): Text => ({
     content,
 });
 
-const createDoctype = (parent: Root): Doctype => ({
+const createDoctype = (parent: Fragment): Doctype => ({
     type: "doctype",
     parent,
 });
 
-export function parseHtml(html: string): Root {
-    const stack: Parent[] = [createRoot()];
+export function parseHtml(html: string): Fragment {
+    const stack: Parent[] = [createFragment()];
     const parser = new SAXParser();
 
     function parent() {
@@ -102,7 +106,7 @@ export function parseHtml(html: string): Root {
 
     function addDoctype() {
         const p = parent();
-        if (p.type === "root") {
+        if (p.type === "fragment") {
             parent().children.push(createDoctype(p));
         }
     }
@@ -128,16 +132,16 @@ export function parseHtml(html: string): Root {
     });
 
     parser.write(html);
-    return stack[0] as Root;
+    return stack[0] as Fragment;
 }
 
 export async function printHtml(node: Node): Promise<string> {
     function visit(node: Node): string {
         switch (node.type) {
+            case "fragment":
+                return node.children.map(visit).join("");
             case "doctype":
                 return "<!DOCTYPE html>";
-            case "root":
-                return node.children.map(visit).join("");
             case "element":
                 return `<${node.tag}${node.attrs
                     .map((attr) => ` ${attr.name}="${attr.value}"`)
@@ -156,9 +160,9 @@ export function transformAst(
     visit: (node: Node) => Node | undefined,
 ): Node {
     const target = visit(source) ?? source;
-    if (target.type === "root" || target.type === "element") {
-        for (const child of target.children) {
-            transformAst(child, visit);
+    if (target.type === "fragment" || target.type === "element") {
+        for (let i = 0; i < target.children.length; i++) {
+            target.children[i] = transformAst(target.children[i], visit);
         }
     }
     return target;
