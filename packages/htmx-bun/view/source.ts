@@ -1,6 +1,6 @@
 import { SAXParser } from "parse5-sax-parser";
 import * as ts from "typescript";
-import { formatHtml, formatTypeScript } from "./lib/format";
+import { formatHtml, formatTypeScript } from "../lib/format";
 
 /**
  * Represents a source file that contains HTML tags and code blocks.
@@ -95,7 +95,6 @@ export class Source {
                     this.interpolationIndex
                 } = (env) => (${prefixReferences(mark.code)})`,
             );
-            console.log("CODE", this.code[this.code.length - 1]);
             this.html.push(text.slice(i, mark.start));
             this.html.push(`$ext${this.interpolationIndex}`);
             i = mark.end;

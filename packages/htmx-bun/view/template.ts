@@ -17,6 +17,13 @@ export class Template {
         return this.module.presentation;
     }
 
+    interpolate(name: string, env: Record<string, unknown>) {
+        const fn = this.module[name] as (
+            env: Record<string, unknown>,
+        ) => string;
+        return fn(env);
+    }
+
     present() {
         return new View(this);
     }

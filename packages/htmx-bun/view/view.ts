@@ -1,37 +1,37 @@
-import { SAXParser } from "parse5-sax-parser";
+import { Root, parseHtml, printHtml, transformAst } from "./ast";
 import { Template } from "./template";
 
 export class View {
+    root: Root;
     constructor(public template: Template) {
-        template.module;
-        this.parse();
+        this.root = parseHtml(template.presentation);
     }
 
-    parse() {
-        const parser = new SAXParser();
-        parser.on("startTag", (tag) => {
-            // console.log(tag);
-        });
-        parser.on("endTag", (tag) => {
-            // console.log(tag);
-        });
-        parser.on("text", (text) => {});
-        parser.on("doctype", (doctype) => {
-            // console.log(doctype);
-        });
-        parser.on("comment", (comment) => {
-            // console.log(comment);
-        });
-        parser.on("cdata", (cdata) => {
-            // console.log(cdata);
-        });
-        parser.on("end", () => {
-            // console.log("end");
-        });
-        parser.on("error", (error) => {
-            // console.log(error);
-        });
-        parser.write(this.template.presentation);
-        parser.end();
+    transform(env: Record<string, unknown>): Root {
+        return transformAst(structuredClone(this.root), (node) => {
+            if (node.type === "element") {
+                for (const attr of node.attrs) {
+                    attr.value = interpolate(this.template, env, attr.value);
+                }
+            }
+            if (node.type === "text") {
+                node.content = interpolate(this.template, env, node.content);
+            }
+            return node;
+        }) as Root;
     }
+
+    async render(env: Record<string, unknown>): Promise<string> {
+        return await printHtml(this.transform(env));
+    }
+}
+
+function interpolate(
+    template: Template,
+    env: Record<string, unknown>,
+    str: string,
+) {
+    return str.replace(/\$ext\d+/g, (match) =>
+        template.interpolate(match, env),
+    );
 }
