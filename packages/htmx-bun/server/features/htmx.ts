@@ -1,3 +1,4 @@
+import { createHtmlElement } from "~/lib/html";
 import { ServerFeature } from ".";
 
 export default function (): ServerFeature {
@@ -15,14 +16,17 @@ export default function (): ServerFeature {
                 });
             }
         },
-        element(element) {
-            if (element.tag === "head") {
-                element.append("script", {
-                    type: "module",
-                    src: "/_htmx",
-                    defer: "",
-                });
+        transform(node) {
+            if (node.type === "element" && node.tag === "head") {
+                node.children.push(
+                    createHtmlElement(node, "script", {
+                        type: "module",
+                        src: "/_htmx",
+                        defer: "",
+                    }),
+                );
             }
+            return undefined;
         },
     };
 }

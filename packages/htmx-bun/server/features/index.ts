@@ -1,4 +1,4 @@
-import { Element } from "~/lib/html";
+import { HtmlTransformer } from "~/lib/html";
 import { info } from "~/lib/log";
 import { ServerOptions } from "~/lib/options";
 
@@ -11,7 +11,7 @@ export interface ServerFeature {
     fetch?: (
         request: Request,
     ) => Promise<Response | undefined> | Response | undefined;
-    element?: (element: Element) => void;
+    transform?: HtmlTransformer;
 }
 
 type FeaturesKey = keyof ServerOptions["features"];

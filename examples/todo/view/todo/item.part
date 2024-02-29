@@ -1,0 +1,36 @@
+<server>
+    import { model, saveModel } from "~/lib/model";
+
+    interface Attributes {
+        id: number;
+    }
+
+    const item = model.items.find((it) => it.id === id);
+    console.log(item);
+</server>
+
+<li
+    hx-trigger="dblclick"
+    hx-get="/todo/item?id=${id}&edit=true"
+    hx-on::after-request="
+        this.querySelector('input.edit')?.focus();
+        this.querySelector('input.edit')?.setSelectionRange(999,999);
+    "
+>
+    <div class="view">
+        <input
+            hx-get="/todo/item?id=${id}&toggle=true"
+            hx-target="closest li"
+            hx-swap="outerHTML"
+            class="toggle"
+            type="checkbox"
+            autocomplete="off"
+        />
+        <label>{item.text}</label>
+        <button
+            hx-get="/todo/item?id=${id}&destroy=true"
+            hx-target="closest li"
+            hx-swap="delete"
+            class="destroy"></button>
+    </div>
+</li>

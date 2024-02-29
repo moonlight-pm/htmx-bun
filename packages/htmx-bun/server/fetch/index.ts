@@ -1,16 +1,29 @@
 import chalk from "chalk";
 import { URL } from "url";
-import { walkHtml } from "~/lib/html";
 import { debug, error, info, warn } from "~/lib/log";
-import { ServerFeature } from "../features";
+import { ServerOptions } from "~/lib/options";
+import { watch } from "~/lib/watch";
+import { TemplateRegister } from "~/view/register";
+import { buildFeatures } from "../features";
 
-export function buildFetch(features: ServerFeature[]) {
-    function transform(html: string) {
-        return walkHtml(html, (node) => {
-            for (const feature of features) {
-                feature.element?.(node);
+export async function buildFetch(options: ServerOptions) {
+    const features = await buildFeatures(options);
+    const register = new TemplateRegister("view");
+    await register.initialize();
+
+    if (options?.features?.dev) {
+        info("server", "watching 'view' directory...");
+        watch("view", async (_, path) => {
+            if (!path || !path?.endsWith(".part")) {
+                return;
             }
-        }) as string;
+            let tag = path.slice(0, -5).replace(/\//g, "-");
+            if (tag === "index") {
+                tag = "root";
+            }
+            info("server", "reloading tag", tag);
+            register.reload(tag);
+        });
     }
 
     return async (request: Request) => {
@@ -20,10 +33,31 @@ export function buildFetch(features: ServerFeature[]) {
         let response: Response | undefined;
 
         for (const feature of features) {
-            console.log("fetch", feature.name, request.url);
-            response = await feature.fetch?.(request);
-            if (response) {
-                break;
+            if (feature.fetch) {
+                response = await feature.fetch(request);
+                if (response) {
+                    break;
+                }
+            }
+        }
+
+        if (!response) {
+            const tag = (url.pathname.slice(1) || "root").replace(/\//g, "-");
+            if (/^[a-z][-a-z0-9]+$/.test(tag)) {
+                const view = register.get(tag).present();
+                if (view) {
+                    view.assemble();
+                    for (const feature of features) {
+                        if (feature.transform) {
+                            view.transform(feature.transform);
+                        }
+                    }
+                    response = new Response(await view.render(), {
+                        headers: {
+                            "Content-Type": "text/html;charset=utf-8",
+                        },
+                    });
+                }
             }
         }
 
@@ -34,13 +68,13 @@ export function buildFetch(features: ServerFeature[]) {
             });
         }
 
-        if (response.headers.get("Content-Type")?.startsWith("text/html")) {
-            response = new Response(transform(await response.text()), {
-                status: response.status,
-                statusText: response.statusText,
-                headers: response.headers,
-            });
-        }
+        // if (response.headers.get("Content-Type")?.startsWith("text/html")) {
+        //     response = new Response(transform(await response.text()), {
+        //         status: response.status,
+        //         statusText: response.statusText,
+        //         headers: response.headers,
+        //     });
+        // }
 
         log(url, response, Math.floor((Bun.nanoseconds() - time) / 1000000));
 

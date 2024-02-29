@@ -1,4 +1,5 @@
 import EventEmitter from "events";
+import { createHtmlElement } from "~/lib/html";
 import { info } from "~/lib/log";
 import { watch } from "~/lib/watch";
 import { ServerFeature } from ".";
@@ -65,14 +66,17 @@ export default function (): ServerFeature {
                 );
             }
         },
-        element(element) {
-            if (element.tag === "head") {
-                element.append("script", {
-                    type: "module",
-                    src: "/_dev",
-                    defer: "",
-                });
+        transform(node) {
+            if (node.type === "element" && node.tag === "head") {
+                node.children.push(
+                    createHtmlElement(node, "script", {
+                        type: "module",
+                        src: "/_dev",
+                        defer: "",
+                    }),
+                );
             }
+            return undefined;
         },
     };
 }

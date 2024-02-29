@@ -6,10 +6,9 @@
     const items = model.items.filter((item) => (
         model.filter === "all" || (model.filter === "active" && !item.done) || (model.filter === "completed" && item.done)
     ));
+    console.log(items);
 </server>
 
 <ul id="todo-list" hx-swap-oob="true" class="todo-list">
-    <each of="items" as="item">
-        <todo-item id={item.id} />
-    </each>
+    <todo-item for="item of {items}" id={item.id} />
 </ul>

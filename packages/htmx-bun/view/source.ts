@@ -29,7 +29,7 @@ export class Source {
 
             ${code}
         `);
-        // console.log(code);
+        console.log(code);
         return code;
     }
 
