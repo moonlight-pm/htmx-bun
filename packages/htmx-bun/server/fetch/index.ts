@@ -49,10 +49,10 @@ export async function buildFetch(options: ServerOptions) {
                     view.assemble();
                     for (const feature of features) {
                         if (feature.transform) {
-                            view.transform(feature.transform);
+                            await view.transform(feature.transform);
                         }
                     }
-                    response = new Response(await view.html(), {
+                    response = new Response(await view.render(), {
                         headers: {
                             "Content-Type": "text/html;charset=utf-8",
                         },

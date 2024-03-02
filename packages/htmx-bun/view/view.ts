@@ -1,5 +1,6 @@
 import {
     HtmlFragment,
+    HtmlTransformer,
     parseHtml,
     printHtmlSyntaxTree,
     transformHtmlSyntaxTree,
@@ -62,6 +63,10 @@ export class View {
                             (it) => attribute.name === it.name,
                         );
                         if (attr) {
+                            if (attribute.type === "number") {
+                                subenv[attribute.name] = Number(attr.value);
+                                continue;
+                            }
                             subenv[attr.name] = attr.value;
                         }
                     }
@@ -78,14 +83,10 @@ export class View {
         });
     }
 
-    env(other: Record<string, unknown> = {}) {
-        return Object.assign({}, other, this.#attributes, this.#locals);
-    }
-
     private interpolate(text: string, env: Record<string, unknown> = {}) {
         return text.replace(/\$exp\d+/g, (match) => {
             const value = this.interpolationValue(match, env);
-            return value ? value.toString() : "";
+            return (value as object).toString();
         });
     }
 
@@ -101,7 +102,11 @@ export class View {
         }
     }
 
-    get children() {
+    private get children() {
         return this.#html.children;
+    }
+
+    async transform(transformer: HtmlTransformer) {
+        await transformHtmlSyntaxTree(this.#html, transformer);
     }
 }

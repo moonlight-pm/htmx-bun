@@ -34,6 +34,6 @@ test("attributes passed to local environment", async () => {
     const view = register.get("passattr").present();
     const html = await view.render();
     expect(html).toBe(
-        "<div>And He is before all things, and in Him all things hold together.</div>\n",
+        "<div>And He is before all things, and in Him all things hold together.</div>\n<div>true</div>\n",
     );
 });

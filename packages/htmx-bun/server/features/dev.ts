@@ -76,7 +76,7 @@ export default function (): ServerFeature {
                     }),
                 );
             }
-            return undefined;
+            return node;
         },
     };
 }

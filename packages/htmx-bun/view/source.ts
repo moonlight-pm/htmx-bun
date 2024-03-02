@@ -22,6 +22,8 @@ export class Source {
         const text = await Bun.file(this.path).text();
         await this.disentangle(text);
         this.transformCode();
+        // console.log(await this.code());
+        // console.log(await this.html());
         return await formatTypeScript(`
             ${await this.code()}
             export const html = ${JSON.stringify(await this.html())};
@@ -116,6 +118,12 @@ export class Source {
                                     node,
                                 );
                             }
+                        }
+                        if (ts.isTypeOfExpression(node.parent)) {
+                            return context.factory.createPropertyAccessExpression(
+                                context.factory.createIdentifier("env"),
+                                node,
+                            );
                         }
                     }
                     return ts.visitEachChild(node, visit, context);
