@@ -4,6 +4,8 @@
     interface Attributes {
         id: number;
         toggle?: boolean;
+        text?: text;
+        destroy?: boolean;
     }
 
     const id = Attributes.id;
@@ -13,15 +15,29 @@
         item.done = !item.done;
         await saveModel();
     }
+
+    if (Attributes.text) {
+        item.text = Attributes.text;
+        await saveModel();
+    }
+
+    if (Attributes.destroy) {
+        // model.items = model.items.filter((it) => it.id !== id);
+        // await saveModel();
+        Helper.cancelRender();
+    }
+
 </server>
 
 <li
     hx-trigger="dblclick"
-    hx-get="/todo/item?id=${id}&edit=true"
+    hx-get="/todo/item?id={id}&edit=true"
+    hx-swap="outerHTML"
     hx-on::after-request="
         this.querySelector('input.edit')?.focus();
         this.querySelector('input.edit')?.setSelectionRange(999,999);
     "
+    class="{Attributes.edit ? 'editing' : ''} {item.done ? 'completed' : ''}"
 >
     <div class="view">
         <input
@@ -35,9 +51,19 @@
         />
         <label>{item.text}</label>
         <button
-            hx-get="/todo/item?id=${id}&destroy=true"
+            hx-get="/todo/item?id={id}&destroy=true"
             hx-target="closest li"
             hx-swap="delete"
             class="destroy"></button>
     </div>
+    <input
+        style="display: {Attributes.edit ? '' : 'none'}"
+        hx-get="/todo/item?id={id}"
+        hx-target="closest li"
+        hx-swap="outerHTML"
+        hx-on:blur="this.parentElement.classList.remove('editing'); this.remove();"
+        class="edit"
+        name="text"
+        value="{item.text}"
+    >
 </li>

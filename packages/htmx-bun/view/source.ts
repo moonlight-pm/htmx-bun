@@ -143,7 +143,7 @@ export class Source {
     }
 
     private transformCode() {
-        const locals: string[] = [];
+        const locals: string[] = ["Helper", "Attributes"];
         const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
             return (root) => {
                 const statements: ts.Statement[] = [];
@@ -165,7 +165,6 @@ export class Source {
                     ) {
                         this.#attributes = node;
                         statements.push(node);
-                        locals.push("Attributes");
                         return;
                     }
                     if (
@@ -187,23 +186,31 @@ export class Source {
                         undefined,
                         ts.factory.createIdentifier("$run"),
                         undefined,
-                        this.#attributes
-                            ? [
-                                  ts.factory.createParameterDeclaration(
-                                      undefined,
-                                      undefined,
-                                      ts.factory.createIdentifier("Attributes"),
-                                      undefined,
-                                      ts.factory.createTypeReferenceNode(
-                                          ts.factory.createIdentifier(
-                                              "Attributes",
-                                          ),
-                                          undefined,
-                                      ),
-                                      undefined,
-                                  ),
-                              ]
-                            : [],
+
+                        [
+                            ts.factory.createParameterDeclaration(
+                                undefined,
+                                undefined,
+                                ts.factory.createIdentifier("Helper"),
+                                undefined,
+                                ts.factory.createTypeReferenceNode(
+                                    ts.factory.createIdentifier("Helper"),
+                                    undefined,
+                                ),
+                                undefined,
+                            ),
+                            ts.factory.createParameterDeclaration(
+                                undefined,
+                                undefined,
+                                ts.factory.createIdentifier("Attributes"),
+                                undefined,
+                                ts.factory.createTypeReferenceNode(
+                                    ts.factory.createIdentifier("Attributes"),
+                                    undefined,
+                                ),
+                                undefined,
+                            ),
+                        ],
                         undefined,
                         ts.factory.createBlock(
                             [

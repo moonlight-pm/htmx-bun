@@ -21,3 +21,5 @@
 - HTML content and attribute interpolation
 - Multiple <server> blocks (currently, embedded typescript is broken for subsequent blocks)
 - Targetable partials / fragments (that is, specifying a near partial rather than knowning its rendered tag)
+- Memoize identical $exps
+- Backticks in a partial source completely jack it up.

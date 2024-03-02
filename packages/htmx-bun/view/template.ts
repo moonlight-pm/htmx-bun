@@ -1,3 +1,4 @@
+import { Helper } from "./helper";
 import { TemplateRegister } from "./register";
 import { Attributes } from "./source";
 import { View } from "./view";
@@ -41,11 +42,12 @@ export class Template {
         return this.module.attributes;
     }
 
-    async run(attributes: Record<string, unknown>) {
+    async run(helper: Helper, attributes: Record<string, unknown>) {
         const fn = this.module.$run as (
+            helper: Helper,
             attributes: Record<string, unknown>,
         ) => Record<string, unknown>;
-        const result = await fn(attributes);
+        const result = await fn(helper, attributes);
         return result;
     }
 

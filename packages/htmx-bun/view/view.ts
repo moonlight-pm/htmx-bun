@@ -6,16 +6,19 @@ import {
     printHtmlSyntaxTree,
     transformHtmlSyntaxTree,
 } from "../lib/html";
+import { Helper } from "./helper";
 import { Template } from "./template";
 
 export class View {
     #assembled = false;
     #html: HtmlFragment;
     #locals: Record<string, unknown> = {};
+    #helper: Helper;
     #attributes: Record<string, unknown> = {};
 
     constructor(public template: Template) {
         this.#html = parseHtml(template.html);
+        this.#helper = new Helper();
     }
 
     async render(attributes: Record<string, unknown> = {}): Promise<string> {
@@ -28,7 +31,7 @@ export class View {
     async assemble(attributes: Record<string, unknown> = {}) {
         this.#assembled = true;
         this.#attributes = this.coerceAttributes(attributes);
-        this.#locals = await this.template.run(attributes);
+        this.#locals = await this.template.run(this.#helper, attributes);
         await transformHtmlSyntaxTree(this.#html, async (node) => {
             if (node.type === "element") {
                 // Handling the 'for' attribute
@@ -72,8 +75,16 @@ export class View {
 
     private interpolate(text: string, env: Record<string, unknown> = {}) {
         return text.replace(/\$exp\d+/g, (match) => {
-            const value = this.interpolationValue(match, env);
-            return (value as object).toString();
+            try {
+                const value = this.interpolationValue(match, env);
+                return (value as object).toString();
+            } catch (e) {
+                // error(
+                //     `Error interpolating ${match}:`,
+                //     this.#locals[match]!.toString(),
+                // );
+                return "";
+            }
         });
     }
 
