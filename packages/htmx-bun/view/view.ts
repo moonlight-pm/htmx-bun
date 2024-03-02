@@ -33,13 +33,18 @@ export class View {
                 const iterator = node.attrs.find((attr) => attr.name === "for");
                 if (iterator) {
                     // Matches something like "item of $ext1"
+                    // const match = iterator.value.match(
+                    //     /([^\s]+)\s+of\s+(\$exp\d+)/,
+                    // );
+                    // Matches something like "item of items"
                     const match = iterator.value.match(
-                        /([^\s]+)\s+of\s+(\$exp\d+)/,
+                        /([^\s]+)\s+of\s+([^\s]+)/,
                     );
                     if (match) {
-                        const list = this.interpolationValue(
-                            match[2],
-                        ) as unknown[];
+                        // const list = this.interpolationValue(
+                        //     match[2],
+                        // ) as unknown[];
+                        const list = this.#locals[match[2]] as unknown[];
                         return list.map((item, i) => {
                             const child = structuredClone(node);
                             child.attrs = child.attrs.filter(

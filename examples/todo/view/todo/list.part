@@ -9,5 +9,5 @@
 </server>
 
 <ul id="todo-list" hx-swap-oob="true" class="todo-list">
-    <todo-item for="item of {items}" id={item.id} />
+    <todo-item for="item of items" id={item.id} />
 </ul>
