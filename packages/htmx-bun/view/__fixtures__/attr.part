@@ -1,0 +1,9 @@
+<server>
+    interface Attributes {
+        text: string;
+    }
+
+    const localtext = Attributes.text;
+</server>
+
+<div>{localtext}</div>

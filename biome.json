@@ -9,7 +9,8 @@
     "linter": {
         "rules": {
             "style": {
-                "noNonNullAssertion": "off"
+                "noNonNullAssertion": "off",
+                "noParameterAssign": "off"
             },
             "a11y": {
                 "all": false

@@ -56,7 +56,10 @@ export type HtmlElement = {
 export type HtmlNode = HtmlFragment | HtmlDoctype | HtmlElement | HtmlText;
 export type HtmlParent = HtmlFragment | HtmlElement;
 
-export const createHtmlFragment = (...children: HtmlNode[]): HtmlFragment => ({
+export const createHtmlFragment = (
+    parent?: HtmlParent,
+    ...children: HtmlNode[]
+): HtmlFragment => ({
     type: "fragment",
     children,
 });
@@ -162,20 +165,44 @@ export async function printHtmlSyntaxTree(node: HtmlNode): Promise<string> {
     return formatHtml(visit(node));
 }
 
-export type HtmlTransformer = (node: HtmlNode) => HtmlNode | undefined;
+// XXX: Changed to require returning the existing node, update to allow undefined to mean remove, or an array is allowed to
+// This is to follow the pattern set forth by the typescript transformer
+export type HtmlTransformer = (
+    node: HtmlNode,
+) =>
+    | Promise<HtmlNode | HtmlNode[] | undefined>
+    | HtmlNode
+    | HtmlNode[]
+    | undefined;
 
-export function transformHtmlSyntaxTree(
-    source: HtmlNode,
+export async function transformHtmlSyntaxTree(
+    root: HtmlFragment,
     visit: HtmlTransformer,
-): HtmlNode {
-    const target = visit(source) ?? source;
-    if (target.type === "fragment" || target.type === "element") {
-        for (let i = 0; i < target.children.length; i++) {
-            target.children[i] = transformHtmlSyntaxTree(
-                target.children[i],
-                visit,
-            );
+) {
+    await visitNodeChildren(root, visit);
+}
+
+async function visitNodeChildren(
+    parent: HtmlParent,
+    visit: HtmlTransformer,
+    path = "",
+) {
+    // path += `> ${parent.tag ?? "frag"} `;
+    // console.log("VISIT", path);
+    const resultingChildren = [];
+    for (const child of parent.children) {
+        const result = await visit(child);
+        if (Array.isArray(result)) {
+            resultingChildren.push(...result);
+        } else if (result) {
+            resultingChildren.push(result);
         }
     }
-    return target;
+    parent.children = resultingChildren;
+    for (const child of parent.children) {
+        child.parent = parent;
+        if (child.type === "fragment" || child.type === "element") {
+            await visitNodeChildren(child, visit, path);
+        }
+    }
 }

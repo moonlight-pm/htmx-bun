@@ -5,8 +5,8 @@
         id: number;
     }
 
-    const item = model.items.find((it) => it.id === id);
-    console.log(item);
+    // const item = model.items.find((it) => it.id === id);
+    // console.log(item);
 </server>
 
 <li

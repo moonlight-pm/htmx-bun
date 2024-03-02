@@ -52,7 +52,7 @@ export async function buildFetch(options: ServerOptions) {
                             view.transform(feature.transform);
                         }
                     }
-                    response = new Response(await view.render(), {
+                    response = new Response(await view.html(), {
                         headers: {
                             "Content-Type": "text/html;charset=utf-8",
                         },

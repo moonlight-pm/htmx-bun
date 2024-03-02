@@ -1,7 +1,5 @@
 import {
     HtmlFragment,
-    HtmlTransformer,
-    createHtmlFragment,
     parseHtml,
     printHtmlSyntaxTree,
     transformHtmlSyntaxTree,
@@ -9,115 +7,101 @@ import {
 import { Template } from "./template";
 
 export class View {
-    root: HtmlFragment;
-    assembled?: boolean;
+    #assembled = false;
+    #html: HtmlFragment;
+    #locals: Record<string, unknown> = {};
+    #attributes: Record<string, unknown> = {};
 
     constructor(public template: Template) {
-        this.root = parseHtml(template.presentation);
+        this.#html = parseHtml(template.html);
     }
 
-    async render(env: Record<string, unknown> = {}): Promise<string> {
-        if (!this.assembled) {
-            this.assemble(env);
+    async render(attributes: Record<string, unknown> = {}): Promise<string> {
+        if (!this.#assembled) {
+            await this.assemble(attributes);
         }
-        return await printHtmlSyntaxTree(this.root);
+        return await printHtmlSyntaxTree(this.#html);
     }
 
-    assemble(env: Record<string, unknown> = {}) {
-        this.root = transformHtmlSyntaxTree(
-            structuredClone(this.root),
-            (node) => {
-                if (node.type === "element") {
-                    const forAttr = node.attrs.find(
-                        (attr) => attr.name === "for",
+    async assemble(attributes: Record<string, unknown> = {}) {
+        this.#attributes = attributes;
+        this.#locals = await this.template.run(attributes);
+        await transformHtmlSyntaxTree(this.#html, async (node) => {
+            if (node.type === "element") {
+                // Handling the 'for' attribute
+                const iterator = node.attrs.find((attr) => attr.name === "for");
+                if (iterator) {
+                    // Matches something like "item of $ext1"
+                    const match = iterator.value.match(
+                        /([^\s]+)\s+of\s+(\$exp\d+)/,
                     );
-                    if (forAttr) {
-                        // Matches something like "item of $ext1"
-                        const match = forAttr.value.match(
-                            /([^\s]+)\s+of\s+(\$ext\d+)/,
-                        );
-                        if (match) {
-                            const list = this.template.interpolate(
-                                match[2],
-                                env,
+                    if (match) {
+                        const list = this.interpolationValue(
+                            match[2],
+                        ) as unknown[];
+                        return list.map((item, i) => {
+                            const child = structuredClone(node);
+                            child.attrs = child.attrs.filter(
+                                (attr) => attr.name !== "for",
                             );
-                            const listFragment = createHtmlFragment(
-                                ...Array.from(
-                                    { length: list.length },
-                                    (_, i) => {
-                                        const child = structuredClone(node);
-                                        child.attrs = child.attrs.filter(
-                                            (attr) => attr.name !== "for",
-                                        );
-                                        const fragmentEnv = Object.assign(
-                                            { [match[1]]: list[i] },
-                                            env,
-                                        );
-                                        for (const attr of child.attrs) {
-                                            attr.value = interpolate(
-                                                this.template,
-                                                fragmentEnv,
-                                                attr.value,
-                                            );
-                                        }
-                                        return child;
-                                    },
-                                ),
-                            );
-                            return listFragment;
-                        }
-                    }
-                    const subtemplate = this.template.register.get(node.tag);
-                    if (subtemplate) {
-                        const subview = subtemplate.present();
-                        const subenv: Record<string, unknown> = {};
-                        for (const name of Object.keys(
-                            subtemplate.module.meta.attributes,
-                        )) {
-                            const attr = node.attrs.find(
-                                (attr) => attr.name === name,
-                            );
-                            if (attr) {
-                                subenv[attr.name] = attr.value;
+                            for (const attr of child.attrs) {
+                                attr.value = this.interpolate(attr.value, {
+                                    [match[1]]: item,
+                                });
                             }
-                        }
-                        return subview.assemble(subenv);
+                            return child;
+                        });
                     }
-                    for (const attr of node.attrs) {
-                        attr.value = interpolate(
-                            this.template,
-                            env,
-                            attr.value,
+                }
+                const subtemplate = this.template.register.get(node.tag);
+                if (subtemplate) {
+                    const subview = subtemplate.present();
+                    const subenv: Record<string, unknown> = {};
+                    for (const attribute of subtemplate.attributes) {
+                        const attr = node.attrs.find(
+                            (it) => attribute.name === it.name,
                         );
+                        if (attr) {
+                            subenv[attr.name] = attr.value;
+                        }
                     }
+                    await subview.assemble(subenv);
+                    return subview.children;
                 }
-                if (node.type === "text") {
-                    node.content = interpolate(
-                        this.template,
-                        env,
-                        node.content,
-                    );
+                for (const attr of node.attrs) {
+                    attr.value = this.interpolate(attr.value);
                 }
-                return node;
-            },
-        ) as HtmlFragment;
-        return this.root;
+            } else if (node.type === "text") {
+                node.content = this.interpolate(node.content);
+            }
+            return node;
+        });
     }
 
-    transform(transformer: HtmlTransformer) {
-        this.root = transformHtmlSyntaxTree(
-            this.root,
-            transformer,
-        ) as HtmlFragment;
+    env(other: Record<string, unknown> = {}) {
+        return Object.assign({}, other, this.#attributes, this.#locals);
     }
-}
 
-function interpolate(
-    template: Template,
-    env: Record<string, unknown>,
-    str: string,
-) {
-    return str.replace(/\$ext\d+/g, (match) =>
-        template.interpolate(match, env),
-    );
+    private interpolate(text: string, env: Record<string, unknown> = {}) {
+        return text.replace(/\$exp\d+/g, (match) => {
+            const value = this.interpolationValue(match, env);
+            return value ? value.toString() : "";
+        });
+    }
+
+    private interpolationValue(
+        exp: string,
+        env: Record<string, unknown> = {},
+    ): unknown {
+        const expression = this.#locals[exp];
+        if (expression) {
+            return (expression as (env: Record<string, unknown>) => unknown)(
+                Object.assign({}, this.#attributes, this.#locals, env),
+            );
+        }
+    }
+
+    get children() {
+        return this.#html.children;
+    }
 }

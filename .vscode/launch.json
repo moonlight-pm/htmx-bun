@@ -19,7 +19,7 @@
             "runtimeExecutable": "${execPath}",
             "args": [
                 "--extensionDevelopmentPath=${workspaceRoot}/packages/vscode",
-                "--folder-uri=${workspaceRoot}/packages/htmx-bun/view/fixtures"
+                "--folder-uri=${workspaceRoot}/packages/htmx-bun/view/__fixtures__"
             ],
             "autoAttachChildProcesses": true
         },

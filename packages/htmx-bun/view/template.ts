@@ -1,14 +1,14 @@
-import { error } from "~/lib/log";
 import { TemplateRegister } from "./register";
-import { Meta } from "./source";
+import { Attributes } from "./source";
 import { View } from "./view";
 
 /**
  * Represents a template module.
  */
 export interface TemplateModule extends Record<string, unknown> {
-    meta: Meta;
-    presentation: string;
+    html: string;
+    code: string;
+    attributes: Attributes;
 }
 
 /**
@@ -25,8 +25,28 @@ export class Template {
     /**
      * Gets the presentation of the template.
      */
-    get presentation() {
-        return this.module.presentation;
+    get html() {
+        return this.module.html;
+    }
+
+    /**
+     * Gets the code of the template.
+     * @returns The code of the template.
+     */
+    get code() {
+        return this.module.code;
+    }
+
+    get attributes() {
+        return this.module.attributes;
+    }
+
+    async run(attributes: Record<string, unknown>) {
+        const fn = this.module.$run as (
+            attributes: Record<string, unknown>,
+        ) => Record<string, unknown>;
+        const result = await fn(attributes);
+        return result;
     }
 
     /**
@@ -35,17 +55,17 @@ export class Template {
      * @param env - The environment object.
      * @returns The interpolated string.
      */
-    interpolate(name: string, env: Record<string, unknown>) {
-        const fn = this.module[name] as (
-            env: Record<string, unknown>,
-        ) => string;
-        if (fn) {
-            return fn(env);
-        }
-        // XXX: Raise error
-        error(`No interpolation function found for ${name}`);
-        return "";
-    }
+    // interpolate(name: string, env: Record<string, unknown>) {
+    //     const fn = this.module[name] as (
+    //         env: Record<string, unknown>,
+    //     ) => string;
+    //     if (fn) {
+    //         return fn(env);
+    //     }
+    //     // XXX: Raise error
+    //     error(`No interpolation function found for ${name}`);
+    //     return "";
+    // }
 
     /**
      * Creates a new view using this template.
@@ -59,25 +79,25 @@ export class Template {
      * Discovers and extracts the interpolation functions from the template module.
      * @returns An array of extract objects.
      */
-    extracts(): Extract[] {
-        const results = [];
-        const extRe = /\$ext\d+/g;
-        let match: RegExpExecArray | null;
-        while ((match = extRe.exec(this.module.presentation)) !== null) {
-            results.push({
-                name: match[0],
-                fn: this.module[match[0]],
-            } as Extract);
-        }
-        return results;
-    }
+    // extracts(): Extract[] {
+    //     const results = [];
+    //     const extRe = /\$ext\d+/g;
+    //     let match: RegExpExecArray | null;
+    //     while ((match = extRe.exec(this.module.html)) !== null) {
+    //         results.push({
+    //             name: match[0],
+    //             fn: this.module[match[0]],
+    //         } as Extract);
+    //     }
+    //     return results;
+    // }
 }
 
 /**
  * Represents an extracted template interpolation.
  * @interface Extract
  */
-interface Extract {
-    name: string;
-    fn: () => unknown;
-}
+// interface Extract {
+//     name: string;
+//     fn: () => unknown;
+// }
