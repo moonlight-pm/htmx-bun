@@ -1,6 +1,6 @@
 import { HtmlTransformer } from "~/lib/html";
 import { info } from "~/lib/log";
-import { ServerOptions } from "~/lib/options";
+import { ServerOptions } from "~/server/options";
 
 export type FeatureFactory = (
     options: ServerOptions,

@@ -25,6 +25,7 @@
         // model.items = model.items.filter((it) => it.id !== id);
         // await saveModel();
         Helper.cancelRender();
+        Helper.oob('todo-footer');
     }
 
 </server>
@@ -57,7 +58,7 @@
             class="destroy"></button>
     </div>
     <input
-        style="display: {Attributes.edit ? '' : 'none'}"
+        style="{Attributes.edit ? '' : 'display: none;'}"
         hx-get="/todo/item?id={id}"
         hx-target="closest li"
         hx-swap="outerHTML"

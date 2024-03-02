@@ -1,6 +1,10 @@
 import { createHtmlElement } from "~/lib/html";
 import { ServerFeature } from ".";
 
+export interface HtmxOptions {
+    debug?: boolean;
+}
+
 export default function (): ServerFeature {
     return {
         name: "htmx",
@@ -22,7 +26,6 @@ export default function (): ServerFeature {
                     createHtmlElement(node, "script", {
                         type: "module",
                         src: "/_htmx",
-                        defer: "",
                     }),
                 );
             }

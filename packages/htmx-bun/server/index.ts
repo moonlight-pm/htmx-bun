@@ -1,6 +1,6 @@
 import { mergeDeepWith } from "ramda";
 import { info } from "~/lib/log";
-import defaultOptions, { ServerOptions } from "~/lib/options";
+import defaultOptions, { ServerOptions } from "~/server/options";
 import { buildFetch } from "./fetch";
 
 export async function serve() {

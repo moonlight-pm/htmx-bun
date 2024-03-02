@@ -21,6 +21,10 @@ export class View {
         this.#helper = new Helper();
     }
 
+    get helper() {
+        return this.#helper;
+    }
+
     async render(attributes: Record<string, unknown> = {}): Promise<string> {
         if (!this.#assembled) {
             await this.assemble(attributes);

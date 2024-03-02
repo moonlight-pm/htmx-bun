@@ -1,10 +1,10 @@
 import chalk from "chalk";
 import { URL } from "url";
 import { debug, error, info, warn } from "~/lib/log";
-import { ServerOptions } from "~/lib/options";
 import { watch } from "~/lib/watch";
+import { ServerOptions } from "~/server/options";
 import { TemplateRegister } from "~/view/register";
-import { buildFeatures } from "../features";
+import { buildFeatures } from "./features";
 
 export async function buildFetch(options: ServerOptions) {
     const features = await buildFeatures(options);
@@ -50,13 +50,21 @@ export async function buildFetch(options: ServerOptions) {
                     attributes[name] = value;
                 });
                 if (view) {
+                    let content = "";
                     view.assemble(attributes);
-                    for (const feature of features) {
-                        if (feature.transform) {
-                            await view.transform(feature.transform);
+                    if (!view.helper.renderCanceled) {
+                        for (const feature of features) {
+                            if (feature.transform) {
+                                await view.transform(feature.transform);
+                            }
                         }
+                        content = await view.render();
                     }
-                    response = new Response(await view.render(), {
+                    for (const oob of view.helper.oobs) {
+                        const oobView = register.get(oob.tag).present();
+                        content += await oobView.render(oob.attributes);
+                    }
+                    response = new Response(content, {
                         headers: {
                             "Content-Type": "text/html;charset=utf-8",
                         },
