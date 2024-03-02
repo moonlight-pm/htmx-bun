@@ -3,10 +3,16 @@
 
     interface Attributes {
         id: number;
+        toggle?: boolean;
     }
 
     const id = Attributes.id;
     const item = model.items.find((it) => it.id === id);
+
+    if (Attributes.toggle) {
+        item.done = !item.done;
+        await saveModel();
+    }
 </server>
 
 <li
@@ -19,12 +25,13 @@
 >
     <div class="view">
         <input
-            hx-get="/todo/item?id=${id}&toggle=true"
+            hx-get="/todo/item?id={id}&toggle=true"
             hx-target="closest li"
             hx-swap="outerHTML"
             class="toggle"
             type="checkbox"
             autocomplete="off"
+            checked={item.done}
         />
         <label>{item.text}</label>
         <button

@@ -149,7 +149,10 @@ export class Source {
                 const statements: ts.Statement[] = [];
                 const visit: ts.Visitor = (node) => {
                     node = ts.visitEachChild(node, visit, context);
-                    if (ts.isImportSpecifier(node)) {
+                    if (
+                        ts.isImportSpecifier(node) &&
+                        node.isTypeOnly === false
+                    ) {
                         locals.push(node.name.text);
                     }
                     if (ts.isImportDeclaration(node)) {
@@ -162,6 +165,7 @@ export class Source {
                     ) {
                         this.#attributes = node;
                         statements.push(node);
+                        locals.push("Attributes");
                         return;
                     }
                     if (
@@ -178,13 +182,10 @@ export class Source {
                     ts.factory.createFunctionDeclaration(
                         [
                             ts.factory.createToken(ts.SyntaxKind.ExportKeyword),
-                            // ts.factory.createToken(
-                            //     ts.SyntaxKind.DefaultKeyword,
-                            // ),
                             ts.factory.createToken(ts.SyntaxKind.AsyncKeyword),
                         ],
                         undefined,
-                        ts.factory.createIdentifier("$run"), // undefined,
+                        ts.factory.createIdentifier("$run"),
                         undefined,
                         this.#attributes
                             ? [

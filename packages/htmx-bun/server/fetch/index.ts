@@ -45,8 +45,12 @@ export async function buildFetch(options: ServerOptions) {
             const tag = (url.pathname.slice(1) || "root").replace(/\//g, "-");
             if (/^[a-z][-a-z0-9]+$/.test(tag)) {
                 const view = register.get(tag).present();
+                const attributes: Record<string, string> = {};
+                url.searchParams.forEach((value, name) => {
+                    attributes[name] = value;
+                });
                 if (view) {
-                    view.assemble();
+                    view.assemble(attributes);
                     for (const feature of features) {
                         if (feature.transform) {
                             await view.transform(feature.transform);

@@ -146,6 +146,7 @@ export function parseHtml(html: string): HtmlFragment {
 }
 
 export async function printHtmlSyntaxTree(node: HtmlNode): Promise<string> {
+    node = structuredClone(node);
     function visit(node: HtmlNode): string {
         switch (node.type) {
             case "fragment":
@@ -153,6 +154,13 @@ export async function printHtmlSyntaxTree(node: HtmlNode): Promise<string> {
             case "doctype":
                 return "<!DOCTYPE html>";
             case "element":
+                if (node.tag === "input") {
+                    node.attrs = node.attrs.filter((attr) =>
+                        attr.name === "checked" && attr.value === "false"
+                            ? undefined
+                            : attr,
+                    );
+                }
                 return `<${node.tag}${node.attrs
                     .map((attr) => ` ${attr.name}="${attr.value}"`)
                     .join("")}>${node.children.map(visit).join("")}${
@@ -205,4 +213,12 @@ async function visitNodeChildren(
             await visitNodeChildren(child, visit, path);
         }
     }
+}
+
+export function attributesToObject(attrs: HtmlElementAttribute[]) {
+    const obj: Record<string, string> = {};
+    for (const attr of attrs) {
+        obj[attr.name] = attr.value;
+    }
+    return obj;
 }

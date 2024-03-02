@@ -14,7 +14,7 @@
                 <!-- <todo-toggle-all></todo-toggle-all> -->
                 <todo-list />
             </main>
-            <!-- <todo-footer></todo-footer> -->
+            <todo-footer />
         </section>
         <footer class="info">
             <p>Double-click to edit a todo</p>

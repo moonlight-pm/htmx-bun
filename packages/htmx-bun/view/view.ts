@@ -1,6 +1,7 @@
 import {
     HtmlFragment,
     HtmlTransformer,
+    attributesToObject,
     parseHtml,
     printHtmlSyntaxTree,
     transformHtmlSyntaxTree,
@@ -25,25 +26,19 @@ export class View {
     }
 
     async assemble(attributes: Record<string, unknown> = {}) {
-        this.#attributes = attributes;
+        this.#assembled = true;
+        this.#attributes = this.coerceAttributes(attributes);
         this.#locals = await this.template.run(attributes);
         await transformHtmlSyntaxTree(this.#html, async (node) => {
             if (node.type === "element") {
                 // Handling the 'for' attribute
                 const iterator = node.attrs.find((attr) => attr.name === "for");
                 if (iterator) {
-                    // Matches something like "item of $ext1"
-                    // const match = iterator.value.match(
-                    //     /([^\s]+)\s+of\s+(\$exp\d+)/,
-                    // );
                     // Matches something like "item of items"
                     const match = iterator.value.match(
                         /([^\s]+)\s+of\s+([^\s]+)/,
                     );
                     if (match) {
-                        // const list = this.interpolationValue(
-                        //     match[2],
-                        // ) as unknown[];
                         const list = this.#locals[match[2]] as unknown[];
                         return list.map((item, i) => {
                             const child = structuredClone(node);
@@ -62,20 +57,7 @@ export class View {
                 const subtemplate = this.template.register.get(node.tag);
                 if (subtemplate) {
                     const subview = subtemplate.present();
-                    const subenv: Record<string, unknown> = {};
-                    for (const attribute of subtemplate.attributes) {
-                        const attr = node.attrs.find(
-                            (it) => attribute.name === it.name,
-                        );
-                        if (attr) {
-                            if (attribute.type === "number") {
-                                subenv[attribute.name] = Number(attr.value);
-                                continue;
-                            }
-                            subenv[attr.name] = attr.value;
-                        }
-                    }
-                    await subview.assemble(subenv);
+                    await subview.assemble(attributesToObject(node.attrs));
                     return subview.children;
                 }
                 for (const attr of node.attrs) {
@@ -113,5 +95,18 @@ export class View {
 
     async transform(transformer: HtmlTransformer) {
         await transformHtmlSyntaxTree(this.#html, transformer);
+    }
+
+    coerceAttributes(attributes: Record<string, unknown>) {
+        for (const attribute of this.template.attributes) {
+            if (attribute.type === "number") {
+                attributes[attribute.name] = Number(attributes[attribute.name]);
+            } else if (attribute.type === "boolean") {
+                attributes[attribute.name] = Boolean(
+                    attributes[attribute.name],
+                );
+            }
+        }
+        return attributes;
     }
 }
