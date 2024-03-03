@@ -116,7 +116,22 @@ export class View {
     }
 
     async transform(transformer: HtmlTransformer) {
-        await transformHtml(this.#html, transformer);
+        await transformHtml(
+            this.#html,
+            async (node, { visitEachChild, visitNode }) => {
+                const results = await transformer(node, {
+                    visitEachChild,
+                    visitNode,
+                });
+                const nodes = [results]
+                    .flat()
+                    .filter((it) => it) as HtmlFragment[];
+                for (const node of nodes) {
+                    await visitEachChild(node);
+                }
+                return nodes;
+            },
+        );
     }
 
     coerceAttributes(attributes: Record<string, unknown>) {

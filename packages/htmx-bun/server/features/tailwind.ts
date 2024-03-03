@@ -33,7 +33,7 @@ export default function (): ServerFeature {
                 });
             }
         },
-        transform(node) {
+        async transform(node) {
             if (node.type === "element" && node.tag === "head") {
                 node.children.push(
                     createHtmlElement(node, "link", {
