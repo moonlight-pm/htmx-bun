@@ -1,6 +1,6 @@
 export class Helper {
     #oobs: Oob[] = [];
-    #cancelRender = false;
+    #renderCanceled = false;
 
     // constructor() {}
 
@@ -13,11 +13,11 @@ export class Helper {
     }
 
     cancelRender() {
-        this.#cancelRender = true;
+        this.#renderCanceled = true;
     }
 
     get renderCanceled() {
-        return this.#cancelRender;
+        return this.#renderCanceled;
     }
 }
 

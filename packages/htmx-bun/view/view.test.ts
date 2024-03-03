@@ -16,12 +16,16 @@ test("composition", async () => {
     expect(html).toBe("<div>\n    <div>Widget</div>\n</div>\n");
 });
 
-test("interpolated composition", async () => {
+test("interpolated composition 1", async () => {
+    const view = register.get("todo-list").present();
+    const html = await view.render();
+    expect(html).toMatchSnapshot();
+});
+
+test("interpolated composition 2", async () => {
     const view = register.get("root").present();
     const html = await view.render();
-    expect(html).toBe(
-        `<html>\n    <body>\n        <ul>\n            <li id="1">Love</li>\n            <li id="2">Joy</li>\n            <li id="3">Peace</li>\n            <li id="4">Patience</li>\n            <li id="5">Kindness</li>\n            <li id="6">Goodness</li>\n            <li id="7">Faithfulness</li>\n            <li id="8">Gentleness</li>\n            <li id="9">Self-control</li>\n        </ul>\n    </body>\n</html>\n`,
-    );
+    expect(html).toMatchSnapshot();
 });
 
 test("local environment", async () => {

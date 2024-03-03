@@ -51,7 +51,7 @@ export async function buildFetch(options: ServerOptions) {
                 });
                 if (view) {
                     let content = "";
-                    view.assemble(attributes);
+                    await view.assemble(attributes);
                     if (!view.helper.renderCanceled) {
                         for (const feature of features) {
                             if (feature.transform) {

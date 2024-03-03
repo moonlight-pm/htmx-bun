@@ -14,6 +14,7 @@
     if (Attributes.toggle) {
         item.done = !item.done;
         await saveModel();
+        Helper.oob('todo-footer');
     }
 
     if (Attributes.text) {
@@ -22,12 +23,11 @@
     }
 
     if (Attributes.destroy) {
-        // model.items = model.items.filter((it) => it.id !== id);
-        // await saveModel();
+        model.items = model.items.filter((it) => it.id !== id);
+        await saveModel();
         Helper.cancelRender();
         Helper.oob('todo-footer');
     }
-
 </server>
 
 <li
