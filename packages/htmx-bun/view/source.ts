@@ -7,7 +7,7 @@ import {
     createHtmlFragment,
     parseHtml,
     printHtmlSyntaxTree,
-    transformHtmlSyntaxTree,
+    transformHtml,
 } from "~/lib/html";
 
 export class Source {
@@ -58,7 +58,7 @@ export class Source {
     private async disentangle(text: string) {
         this.#html = parseHtml(text);
         const code: string[] = [];
-        await transformHtmlSyntaxTree(this.#html, (node) => {
+        await transformHtml(this.#html, async (node, { visitEachChild }) => {
             if (node.type === "element") {
                 if (node.tag === "server") {
                     code.push((node.children[0] as HtmlText).content);
@@ -70,6 +70,7 @@ export class Source {
             } else if (node.type === "text") {
                 node.content = this.matchExpressions(code, node.content);
             }
+            await visitEachChild(node);
             return node;
         });
         this.#code = ts.createSourceFile(

@@ -5,12 +5,12 @@ exports[`compile 1`] = `
 interface Attributes {
     foo: string;
 }
-export default async function (Attributes: Attributes) {
+export async function $run(Helper: Helper, Attributes: Attributes) {
     const id = 1;
     const bar = foo;
     const $exp0 = (env) => (env.id);
     const $exp1 = (env) => (env.bar);
-    return { readFileSync, id, bar, $exp0, $exp1 };
+    return { Helper, Attributes, readFileSync, id, bar, $exp0, $exp1 };
 }
 "
 `;

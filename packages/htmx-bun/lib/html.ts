@@ -173,46 +173,42 @@ export async function printHtmlSyntaxTree(node: HtmlNode): Promise<string> {
     return formatHtml(visit(node));
 }
 
-// XXX: Changed to require returning the existing node, update to allow undefined to mean remove, or an array is allowed to
-// This is to follow the pattern set forth by the typescript transformer
+export type HtmlVisitResponse = HtmlNode | (HtmlNode | undefined)[] | undefined;
+
+type VisitFunctions = {
+    visitNode: (node: HtmlNode) => Promise<HtmlVisitResponse>;
+    visitEachChild: (node: HtmlNode) => Promise<HtmlNode>;
+};
+
 export type HtmlTransformer = (
     node: HtmlNode,
-) =>
-    | Promise<HtmlNode | HtmlNode[] | undefined>
-    | HtmlNode
-    | HtmlNode[]
-    | undefined;
+    fns: VisitFunctions,
+) => Promise<HtmlVisitResponse>;
 
-export async function transformHtmlSyntaxTree(
-    root: HtmlFragment,
-    visit: HtmlTransformer,
-) {
-    await visitNodeChildren(root, visit);
-}
+export async function transformHtml(node: HtmlNode, visit: HtmlTransformer) {
+    async function visitNode(node: HtmlNode) {
+        return await visit(node, { visitNode, visitEachChild });
+    }
 
-async function visitNodeChildren(
-    parent: HtmlParent,
-    visit: HtmlTransformer,
-    path = "",
-) {
-    // path += `> ${parent.tag ?? "frag"} `;
-    // console.log("VISIT", path);
-    const resultingChildren = [];
-    for (const child of parent.children) {
-        const result = await visit(child);
-        if (Array.isArray(result)) {
-            resultingChildren.push(...result);
-        } else if (result) {
-            resultingChildren.push(result);
+    async function visitEachChild(node: HtmlNode) {
+        if (node.type === "fragment" || node.type === "element") {
+            const replacements = [];
+            for (const child of node.children) {
+                replacements.push(
+                    await visit(child, { visitEachChild, visitNode }),
+                );
+            }
+            node.children = replacements
+                .flat()
+                .filter((it) => it) as HtmlNode[];
+            for (const child of node.children) {
+                child.parent = node;
+            }
         }
+        return node;
     }
-    parent.children = resultingChildren;
-    for (const child of parent.children) {
-        child.parent = parent;
-        if (child.type === "fragment" || child.type === "element") {
-            await visitNodeChildren(child, visit, path);
-        }
-    }
+
+    return await visitNode(node);
 }
 
 export function attributesToObject(attrs: HtmlElementAttribute[]) {
