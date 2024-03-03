@@ -11,7 +11,7 @@
                 <todo-add />
             </header>
             <main class="main" style="display: block;">
-                <!-- <todo-toggle-all></todo-toggle-all> -->
+                <todo-toggle />
                 <todo-list />
             </main>
             <todo-footer />

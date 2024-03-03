@@ -10,11 +10,14 @@
     if (Attributes.clear) {
         model.items = model.items.filter((item) => !item.done);
         saveModel();
+        Helper.oob("todo-list");
+        Helper.oob("todo-toggle");
     }
 
     if (Attributes.filter) {
         model.filter = Attributes.filter;
         saveModel();
+        Helper.oob("todo-list");
     }
 
     const remaining = model.items.filter((item) => !item.done).length;
@@ -34,6 +37,7 @@
         <li>
             <a
                 hx-get="/todo/footer?filter=all"
+                hx-swap="none"
                 href="#"
                 class="{model.filter === 'all' ? 'selected' : ''}"
             >All</a>
@@ -41,6 +45,7 @@
         <li>
             <a
                 hx-get="/todo/footer?filter=active"
+                hx-swap="none"
                 href="#"
                 class="{model.filter === 'active' ? 'selected' : ''}"
             >Active</a>
@@ -48,6 +53,7 @@
         <li>
             <a
                 hx-get="/todo/footer?filter=completed"
+                hx-swap="none"
                 href="#"
                 class="{model.filter === 'completed' ? 'selected' : ''}"
             >Completed</a>
@@ -55,6 +61,8 @@
     </ul>
     <button
         hx-get="/todo/footer?clear=true"
+        hx-target="closest footer"
+        hx-swap="outerHTML"
         class="clear-completed"
         style="display: {remaining !== model.items.length ? 'block' : 'none'};"
     >Clear completed</button>

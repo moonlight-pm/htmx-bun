@@ -15,6 +15,9 @@
         item.done = !item.done;
         await saveModel();
         Helper.oob('todo-footer');
+        Helper.oob('todo-toggle');
+        Helper.oob('todo-list');
+        Helper.cancelRender();
     }
 
     if (Attributes.text) {
@@ -35,6 +38,8 @@
     hx-get="/todo/item?id={id}&edit=true"
     hx-swap="outerHTML"
     hx-on::after-request="
+        // This event isn't firing
+        console.log('AFTER')
         this.querySelector('input.edit')?.focus();
         this.querySelector('input.edit')?.setSelectionRange(999,999);
     "
@@ -43,8 +48,7 @@
     <div class="view">
         <input
             hx-get="/todo/item?id={id}&toggle=true"
-            hx-target="closest li"
-            hx-swap="outerHTML"
+            hx-swap="none"
             class="toggle"
             type="checkbox"
             autocomplete="off"
