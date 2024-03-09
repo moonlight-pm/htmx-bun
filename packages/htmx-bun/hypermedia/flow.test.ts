@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { expressTransformHtmlIntoStrings } from "./expressor";
-import { flowEachTransformHtml } from "./flow";
+import { transformExpressionsIntoStrings } from "./expressor";
+import { transformFlowEach } from "./flow";
 import { parseSource, printHtml } from "./template";
 
 const source1 = `
@@ -9,7 +9,7 @@ const source1 = `
 
 test("simple each", () => {
     const node = parseSource(source1);
-    flowEachTransformHtml(node);
+    transformFlowEach(node);
     expect(printHtml(node, { trim: true })).toBe("<hr><hr><hr><hr>");
 });
 
@@ -19,7 +19,7 @@ const source2 = `
 
 test("each that passes additional scope", () => {
     const node = parseSource(source2);
-    flowEachTransformHtml(node);
-    expressTransformHtmlIntoStrings(node);
+    transformFlowEach(node);
+    transformExpressionsIntoStrings(node);
     expect(printHtml(node, { trim: true })).toBe("<a>1</a><a>2</a>");
 });

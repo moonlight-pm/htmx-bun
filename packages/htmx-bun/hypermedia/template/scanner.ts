@@ -1,4 +1,4 @@
-import { voids } from "./ast";
+import { htmlVoidTags } from ".";
 
 export enum TokenType {
     Whitespace = "Whitespace",
@@ -86,7 +86,7 @@ class Scanner {
         if (!this.matchCharacterType(TokenType.CloseAngleBracket, ">")) {
             this.error("Expected closing brace");
         }
-        if (voids.includes(tag) || selfClosing) {
+        if (htmlVoidTags.includes(tag) || selfClosing) {
             return;
         }
         this.matchContent();

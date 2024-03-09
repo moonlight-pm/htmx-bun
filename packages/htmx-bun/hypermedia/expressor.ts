@@ -1,4 +1,5 @@
 import { error } from "~/lib/log";
+import { AttributeTypes, Attributes } from ".";
 import {
     HtmlElement,
     HtmlNode,
@@ -31,9 +32,8 @@ export function express(scope: Scope, expression: string): unknown {
  *
  * @param scope - The scope to evaluate the expression with.
  * @param template - The HtmlFragment root.
- * @returns The transformed template.
  */
-export function expressTransformHtmlIntoStrings(node: HtmlNode): HtmlNode {
+export function transformExpressionsIntoStrings(node: HtmlNode) {
     simpleTransformHtml(node, (node) => {
         if (node.type === "element") {
             node.attrs = node.attrs.map((attr) => {
@@ -58,7 +58,6 @@ export function expressTransformHtmlIntoStrings(node: HtmlNode): HtmlNode {
         }
         return node;
     });
-    return node;
 }
 
 /**
@@ -68,7 +67,10 @@ export function expressTransformHtmlIntoStrings(node: HtmlNode): HtmlNode {
  * @param name The name of the attribute to express
  * @returns The expressed value, or undefined.
  */
-export function expressAttribute(node: HtmlElement, name: string): unknown {
+export function expressAttributeFirstValue(
+    node: HtmlElement,
+    name: string,
+): unknown {
     for (const attr of node.attrs) {
         if (attr.name !== name) continue;
         if (attr.value.length === 0) continue;
@@ -77,4 +79,50 @@ export function expressAttribute(node: HtmlElement, name: string): unknown {
         }
         return attr.value[0].content;
     }
+}
+
+// export function expressAttributeValue(value: HtmlElementAttributeValue) {
+//     if (value.type === "text") {
+//         return value.content;
+//     }
+//     return express(node.scope, attr.value[0].content);
+// }
+
+// export function expressAttributeValueToString(
+//     attribute: HtmlElementAttribute,
+//     name: string,
+// ) {
+//     const values = [];
+//     for (const val of attribute.value) {
+//     }
+//     for (const attr of node.attrs) {
+//         if (attr.name !== name) continue;
+//         if (attr.value.length === 0) continue;
+//         if (attr.value[0].type === "expression") {
+//             return express(node.scope, attr.value[0].content);
+//         }
+//         return attr.value[0].content;
+//     }
+// }
+
+export function expressDefinedAttributesToStrings(
+    node: HtmlElement,
+    types: AttributeTypes,
+) {
+    const attributes = {} as Attributes;
+    for (const attr of node.attrs) {
+        const type = types[attr.name];
+        const values = [];
+        if (type) {
+            for (const v of attr.value) {
+                if (v.type === "expression") {
+                    values.push(String(express(node.scope, v.content)));
+                } else {
+                    values.push(v.content);
+                }
+            }
+        }
+        attributes[attr.name] = values.join("");
+    }
+    return attributes;
 }

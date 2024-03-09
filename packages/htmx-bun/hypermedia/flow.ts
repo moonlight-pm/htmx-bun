@@ -1,5 +1,5 @@
 import { warn } from "~/lib/log";
-import { expressAttribute } from "./expressor";
+import { expressAttributeFirstValue } from "./expressor";
 import {
     HtmlElement,
     HtmlNode,
@@ -15,11 +15,17 @@ import {
  * @param scope The scope to use for evaluating expressions.
  * @param node The ast to apply the each transform on.
  */
-export function flowEachTransformHtml(node: HtmlNode) {
+export function transformFlowEach(node: HtmlNode) {
     simpleTransformHtml(node, (node) => {
         if (node.type === "element") {
-            const each = expressAttribute(node, "mx-each") as unknown[];
-            const as = expressAttribute(node, "mx-as") as string;
+            const each = expressAttributeFirstValue(
+                node,
+                "mx-each",
+            ) as unknown[];
+            if (!each) {
+                return node;
+            }
+            const as = expressAttributeFirstValue(node, "mx-as") as string;
             if (!Array.isArray(each)) {
                 warn(
                     "flow",

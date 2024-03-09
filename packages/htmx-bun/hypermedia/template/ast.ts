@@ -1,24 +1,4 @@
-/**
- * An array of void tag names.
- * Void tags are HTML tags that do not require a closing tag.
- */
-export const voids = [
-    "area",
-    "base",
-    "br",
-    "col",
-    "embed",
-    "hr",
-    "img",
-    "input",
-    "link",
-    "meta",
-    "param",
-    "source",
-    "track",
-    "wbr",
-];
-
+import { htmlVoidTags } from ".";
 export type Scope = Record<string, unknown>;
 
 export type HtmlFragment = {
@@ -92,7 +72,7 @@ export const createHtmlElement = (
     type: "element",
     parent,
     tag,
-    void: voids.includes(tag),
+    void: htmlVoidTags.includes(tag),
     attrs: Array.isArray(attrs)
         ? attrs
         : Object.entries(attrs).map(([name, value]) => ({

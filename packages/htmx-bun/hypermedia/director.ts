@@ -2,8 +2,11 @@ import { plugin } from "bun";
 import { existsSync, readFileSync } from "fs";
 import { info, warn } from "~/lib/log";
 import { watch } from "~/lib/watch";
-import { Artifact, Representation, Source } from ".";
+import { Context } from "~/server/context";
+import { Artifact, Attributes, Representation, Source } from ".";
 import { MarkdownSource } from "./kinds/markdown/source";
+import { PartialSource } from "./kinds/partial/source";
+import { PrintHtmlOptions, htmlTags } from "./template";
 
 /**
  * Manages hypermedia representations and their modules.
@@ -23,6 +26,10 @@ export class Director {
      * @param source The string or source instance.
      */
     prepare(tag: string, source: Source) {
+        if (htmlTags.includes(tag)) {
+            warn("director", `tag name '${tag}' is reserved, ignoring`);
+            return;
+        }
         plugin({
             setup: ({ module }) => {
                 module(tag, () => {
@@ -34,7 +41,12 @@ export class Director {
             },
         });
         const artifact = require(tag) as Artifact;
-        const representation = new Representation(tag, artifact, source.path);
+        const representation = new Representation(
+            this,
+            tag,
+            artifact,
+            source.path,
+        );
         this.representations.set(tag, representation);
     }
 
@@ -79,27 +91,14 @@ export class Director {
                 return;
             }
             const text = readFileSync(path, "utf8");
-            const source = new MarkdownSource(
-                text,
-                path.replace(new RegExp(`^${this.base}/`), ""),
-            );
-            this.prepare(tag, source);
-            // try {
-            //     if (path.endsWith(".part")) {
-            //         const module = require(path) as PartialModule;
-            //         this.#templates.set(
-            //             tag,
-            //             new PartialTemplate(this, tag, path, module),
-            //         );
-            //     } else if (path.endsWith(".md")) {
-            //         const module = require(path) as MarkdownModule;
-            //         this.#templates.set(
-            //             tag,
-            //             new MarkdownTemplate(this, tag, path, module),
-            //         );
-            //     }
+            const shortpath = path.replace(new RegExp(`^${this.base}/`), "");
+            if (path.endsWith(".part")) {
+                this.prepare(tag, new PartialSource(text, shortpath));
+            } else if (path.endsWith(".md")) {
+                this.prepare(tag, new MarkdownSource(text, shortpath));
+            }
             // } catch (e) {
-            //     error("compositor", `Failed to load '${path}'`);
+            //     error("director", `Failed to load '${path}'`);
             //     // @ts-ignore
             //     const cause = e.cause?.toString();
             //     if (cause) {
@@ -111,6 +110,28 @@ export class Director {
             // }
         }
         return this.representations.get(tag);
+    }
+
+    /**
+     * A helper to run through the whole render pipeline.
+     *
+     * @param tag The tag name.
+     * @param context The server context.
+     * @param attributes The attributes.
+     * @param options Options to pass to the printer.
+     * @returns The rendered html string.
+     */
+    async render(
+        tag: string,
+        context: Context,
+        attributes: Attributes,
+        options: Partial<PrintHtmlOptions> = {},
+    ): Promise<string> {
+        const rep = this.represent(tag)!;
+        const pres = rep.present(context, attributes);
+        await pres.activate();
+        await pres.compose();
+        return pres.render(options);
     }
 
     /**

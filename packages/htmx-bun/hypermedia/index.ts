@@ -1,12 +1,12 @@
 import { Context } from "~/server/context";
-import { expressTransformHtmlIntoStrings } from "./expressor";
+import { Director } from "./director";
+import { Presentation } from "./presentation";
 import {
     HtmlFragment,
     Scope,
     cloneHtml,
     createHtmlFragment,
     parseSource,
-    printHtml,
 } from "./template";
 
 export type AttributeType = string | boolean | number;
@@ -92,6 +92,7 @@ export class Representation {
     private template: HtmlFragment;
 
     constructor(
+        private readonly director: Director,
         readonly tag: string,
         readonly artifact: Artifact,
         readonly path?: string,
@@ -110,42 +111,13 @@ export class Representation {
     present(context: Context, attributes: Attributes): Presentation {
         // if (this.artifact.kind === "markdown") {
         const template = cloneHtml(this.template) as HtmlFragment;
-        return new Presentation(this, template, context, attributes);
-        // }
-    }
-}
-
-export class Presentation {
-    constructor(
-        protected readonly representation: Representation,
-        protected readonly template: HtmlFragment,
-        protected readonly context: Context,
-        protected readonly attributes: Attributes,
-    ) {}
-
-    /**
-     * Execute the action tied to this presentation with the contained server context
-     * and the attributes passed into this presentation instance.
-     */
-    async activate(): Promise<void> {
-        Object.assign(
-            this.template.scope,
-            await this.representation.artifact.action(
-                this.context,
-                this.attributes,
-            ),
+        return new Presentation(
+            this.director,
+            this,
+            template,
+            context,
+            attributes,
         );
-    }
-
-    /**
-     * Transforms a copy of the template evaluating all expressions into
-     * strings, returning the final html string.
-     * @returns
-     */
-    render() {
-        // const template = structuredClone(this.template);
-        // flowEachTransformHtml
-        expressTransformHtmlIntoStrings(this.template);
-        return printHtml(this.template);
+        // }
     }
 }
