@@ -96,3 +96,16 @@ export function simpleWalkHtml(node: HtmlNode, visit: HtmlSimpleWalkVisitor) {
         visitEachChild(node);
     });
 }
+
+export function cloneHtml(source: HtmlNode): HtmlNode {
+    const target = structuredClone(source);
+    simpleWalkHtml(target, (node) => {
+        if (node.parent) {
+            node.scope = Object.assign(
+                Object.create(node.parent.scope),
+                node.scope,
+            );
+        }
+    });
+    return target;
+}

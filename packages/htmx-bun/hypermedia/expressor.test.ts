@@ -16,8 +16,9 @@ test("express template to strings", () => {
     };
     const template = parseSource(
         "<h1 name={$scope.gifts[0]}>{$scope.gifts[1]} {$scope.gifts[2]}</h1>",
+        scope,
     );
-    expect(printHtml(expressTransformHtmlIntoStrings(scope, template))).toBe(
+    expect(printHtml(expressTransformHtmlIntoStrings(template))).toBe(
         `<h1 name="Love">Joy Peace</h1>\n`,
     );
 });
@@ -26,8 +27,8 @@ test("express attribute", () => {
     const scope = {
         gifts: ["Love", "Joy", "Peace"],
     };
-    const template = parseSource("<hr gifts={$scope.gifts}>");
-    expect(
-        expressAttribute(scope, template.children[0] as HtmlElement, "gifts"),
-    ).toBe(scope.gifts);
+    const template = parseSource("<hr gifts={$scope.gifts}>", scope);
+    expect(expressAttribute(template.children[0] as HtmlElement, "gifts")).toBe(
+        scope.gifts,
+    );
 });

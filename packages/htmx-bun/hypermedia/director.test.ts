@@ -36,7 +36,7 @@ test("watch", async () => {
     writeFileSync(`${director.base}/patience.md`, "# μακροθυμία");
     // This test relies on the watch system to fire an event and we
     // can't be sure when that will happen.
-    await Bun.sleep(50);
+    await Bun.sleep(100);
     rep = director.represent("patience")!;
     expect(rep.artifact.template).toBe("<h1>μακροθυμία</h1>\n");
 });

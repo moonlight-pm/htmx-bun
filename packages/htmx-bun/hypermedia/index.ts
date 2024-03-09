@@ -2,6 +2,8 @@ import { Context } from "~/server/context";
 import { expressTransformHtmlIntoStrings } from "./expressor";
 import {
     HtmlFragment,
+    Scope,
+    cloneHtml,
     createHtmlFragment,
     parseSource,
     printHtml,
@@ -13,7 +15,6 @@ export type AttributeTypes = Record<string, AttributeTypeString>;
 export type Attributes = Record<string, AttributeType>;
 
 export type ArtifactKind = "partial" | "markdown";
-export type Scope = Record<string, unknown>;
 
 /**
  * The representation's source code.
@@ -108,19 +109,13 @@ export class Representation {
      */
     present(context: Context, attributes: Attributes): Presentation {
         // if (this.artifact.kind === "markdown") {
-        return new Presentation(
-            this,
-            structuredClone(this.template),
-            context,
-            attributes,
-        );
+        const template = cloneHtml(this.template) as HtmlFragment;
+        return new Presentation(this, template, context, attributes);
         // }
     }
 }
 
 export class Presentation {
-    protected scope: Scope = {};
-
     constructor(
         protected readonly representation: Representation,
         protected readonly template: HtmlFragment,
@@ -133,9 +128,12 @@ export class Presentation {
      * and the attributes passed into this presentation instance.
      */
     async activate(): Promise<void> {
-        this.scope = await this.representation.artifact.action(
-            this.context,
-            this.attributes,
+        Object.assign(
+            this.template.scope,
+            await this.representation.artifact.action(
+                this.context,
+                this.attributes,
+            ),
         );
     }
 
@@ -145,8 +143,9 @@ export class Presentation {
      * @returns
      */
     render() {
-        const template = structuredClone(this.template);
-        expressTransformHtmlIntoStrings(this.scope, template);
-        return printHtml(template);
+        // const template = structuredClone(this.template);
+        // flowEachTransformHtml
+        expressTransformHtmlIntoStrings(this.template);
+        return printHtml(this.template);
     }
 }
