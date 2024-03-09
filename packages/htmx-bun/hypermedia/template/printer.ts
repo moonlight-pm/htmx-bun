@@ -2,12 +2,20 @@ import { HtmlElementAttribute, HtmlNode } from "./ast";
 import { parseSource } from "./parser";
 import { walkHtml } from "./transform";
 
-export function printHtml(htmlOrNode: string | HtmlNode): string {
+export interface PrintHtmlOptions {
+    trim: boolean;
+}
+
+export function printHtml(
+    htmlOrNode: string | HtmlNode,
+    options: Partial<PrintHtmlOptions> = {},
+): string {
+    const { trim } = Object.assign({ trim: false }, options);
     const html =
         typeof htmlOrNode === "string"
             ? parseSource(htmlOrNode)
             : structuredClone(htmlOrNode);
-    const text: string[] = [];
+    let text: string[] = [];
     walkHtml(html, (node, { visitEachChild }) => {
         if (node.type === "fragment") {
             visitEachChild(node);
@@ -47,7 +55,7 @@ export function printHtml(htmlOrNode: string | HtmlNode): string {
             return;
         }
         if (node.type === "text") {
-            text.push(node.content);
+            text.push(trim ? node.content.trim() : node.content);
             return;
         }
         if (node.type === "expression") {
@@ -55,7 +63,11 @@ export function printHtml(htmlOrNode: string | HtmlNode): string {
             return;
         }
     });
-    return `${text.join("").trim()}\n`;
+    text = [text.join("").trim()];
+    if (!trim) {
+        text.push("\n");
+    }
+    return text.join("");
 }
 
 export function concatAttributeValue(attr: HtmlElementAttribute) {

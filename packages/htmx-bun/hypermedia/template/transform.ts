@@ -7,12 +7,8 @@ export type HtmlTransformVisitResponse =
 
 export type HtmlTransformVisitNodeFunction = (
     node: HtmlNode,
-    additionalScope?: Record<string, unknown>,
-) => Promise<HtmlTransformVisitResponse>;
-export type HtmlTransformVisitEachChildFunction = (
-    node: HtmlNode,
-    additionalScope?: Record<string, unknown>,
-) => Promise<HtmlNode>;
+) => HtmlTransformVisitResponse;
+export type HtmlTransformVisitEachChildFunction = (node: HtmlNode) => HtmlNode;
 
 export type HtmlTransformVisitFunctions = {
     visitNode: HtmlTransformVisitNodeFunction;
@@ -22,38 +18,22 @@ export type HtmlTransformVisitFunctions = {
 export type HtmlTransformVisitor = (
     node: HtmlNode,
     fns: HtmlTransformVisitFunctions,
-    additionalScope?: Record<string, unknown>,
-) => Promise<HtmlTransformVisitResponse>;
+) => HtmlTransformVisitResponse;
 
-export async function transformHtml(
+export type HtmlSimpleTransformVisitor = (
     node: HtmlNode,
-    visit: HtmlTransformVisitor,
-) {
-    async function visitNode(
-        node: HtmlNode,
-        additionalScope: Record<string, unknown> = {},
-    ) {
-        return await visit(
-            node,
-            { visitNode, visitEachChild },
-            additionalScope,
-        );
+) => HtmlTransformVisitResponse;
+
+export function transformHtml(node: HtmlNode, visit: HtmlTransformVisitor) {
+    function visitNode(node: HtmlNode) {
+        return visit(node, { visitNode, visitEachChild });
     }
 
-    async function visitEachChild(
-        node: HtmlNode,
-        additionalScope: Record<string, unknown> = {},
-    ) {
+    function visitEachChild(node: HtmlNode) {
         if (node.type === "fragment" || node.type === "element") {
             const replacements = [];
             for (const child of node.children) {
-                replacements.push(
-                    await visit(
-                        child,
-                        { visitEachChild, visitNode },
-                        additionalScope,
-                    ),
-                );
+                replacements.push(visit(child, { visitEachChild, visitNode }));
             }
             node.children = replacements
                 .flat()
@@ -65,7 +45,27 @@ export async function transformHtml(
         return node;
     }
 
-    return await visitNode(node);
+    return visitNode(node);
+}
+
+/**
+ * Transforms the Ast using the provided visitor.  This version does not pass
+ * in the other visit functions, so it is implicitly a preorder traversal.
+ *
+ * @param visit - The visitor function to apply to each HTML node.
+ */
+export function simpleTransformHtml(
+    node: HtmlNode,
+    visit: HtmlSimpleTransformVisitor,
+) {
+    transformHtml(node, (node, { visitEachChild, visitNode }) => {
+        const results = visit(node);
+        const nodes = [results].flat().filter((it) => it) as HtmlNode[];
+        for (const node of nodes) {
+            visitEachChild(node);
+        }
+        return nodes;
+    });
 }
 
 type HtmlWalkVisitFunctions = {

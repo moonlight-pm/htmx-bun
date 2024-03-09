@@ -1,11 +1,3 @@
-import { Presentation } from "~/hypermedia/index.ts";
+import { Presentation } from "~/hypermedia";
 
-export class MarkdownPresentation extends Presentation {
-    // get children() {
-    //     return parsePartial(this.#template.html).children;
-    // }
-    // async render(): Promise<string> {
-    //     return this.#template.html;
-    // }
-    // async assemble() {}
-}
+export class MarkdownPresentation extends Presentation {}

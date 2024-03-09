@@ -75,7 +75,7 @@ export class Director {
         if (!this.representations.has(tag)) {
             const path = this.pathForTag(tag);
             if (!path) {
-                warn("compositor", `No representation found for '${tag}'`);
+                warn("director", `No representation found for '${tag}'`);
                 return;
             }
             const text = readFileSync(path, "utf8");

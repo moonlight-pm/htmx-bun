@@ -1,5 +1,11 @@
 import { Context } from "~/server/context";
-import { HtmlFragment, createHtmlFragment, parseSource } from "./template";
+import { expressTransformHtmlIntoStrings } from "./expressor";
+import {
+    HtmlFragment,
+    createHtmlFragment,
+    parseSource,
+    printHtml,
+} from "./template";
 
 export type AttributeType = string | boolean | number;
 export type AttributeTypeString = "string" | "boolean" | "number";
@@ -13,6 +19,8 @@ export type Scope = Record<string, unknown>;
  * The representation's source code.
  */
 export abstract class Source {
+    private compiled = false;
+
     /**
      * @param text The text content of the source.
      */
@@ -50,7 +58,10 @@ export abstract class Source {
     protected abstract compile(): void;
 
     get code(): string {
-        this.compile();
+        if (!this.compiled) {
+            this.compile();
+            this.compiled = true;
+        }
         return [
             `export const attributes = ${this.attributes};`,
             `export const template = ${this.template};`,
@@ -126,5 +137,16 @@ export class Presentation {
             this.context,
             this.attributes,
         );
+    }
+
+    /**
+     * Transforms a copy of the template evaluating all expressions into
+     * strings, returning the final html string.
+     * @returns
+     */
+    render() {
+        const template = structuredClone(this.template);
+        expressTransformHtmlIntoStrings(this.scope, template);
+        return printHtml(template);
     }
 }
