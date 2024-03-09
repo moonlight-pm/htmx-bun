@@ -10,6 +10,7 @@ import { transformFlowEach } from "./flow";
 import {
     HtmlElement,
     HtmlFragment,
+    HtmlNode,
     PrintHtmlOptions,
     htmlTags,
     printHtml,
@@ -63,6 +64,9 @@ export class Presentation {
         const queue: [HtmlElement, Presentation][] = [];
         simpleTransformHtml(this.template, (node) => {
             if (node.type === "element") {
+                if (node.tag === "slot") {
+                    return node;
+                }
                 if (htmlTags.includes(node.tag)) {
                     return node;
                 }
@@ -85,13 +89,21 @@ export class Presentation {
         for (const [node, presentation] of queue) {
             await presentation.activate();
             await presentation.compose();
-            // XXX: If the node has any content, that would go in a slot, deal with that here.
-            // Note, the attached presentation contents will have an isolated scope.
+            presentation.replaceSlotWith(node.children);
             node.parent.children.splice(
                 node.parent.children.indexOf(node),
                 1,
                 ...presentation.template.children,
             );
         }
+    }
+
+    replaceSlotWith(nodes: HtmlNode[]) {
+        simpleTransformHtml(this.template, (node) => {
+            if (node.type === "element" && node.tag === "slot") {
+                return nodes;
+            }
+            return node;
+        });
     }
 }

@@ -95,3 +95,46 @@ test("render todo list", async () => {
         `<ul><li id="1">Love</li><li id="2">Joy</li><li id="3">Peace</li></ul>`,
     );
 });
+
+director.prepare(
+    "slot-outer",
+    new PartialSource(`
+const gift = "Joy";
+
+<main>
+    <slot-middle>
+        <slot-inner gift={gift} />
+    </slot-middle>
+</main>
+`),
+);
+
+director.prepare(
+    "slot-middle",
+    new PartialSource(`
+<div class="outer">
+    <slot />
+</div>
+`),
+);
+
+director.prepare(
+    "slot-inner",
+    new PartialSource(`
+interface Attributes {
+    gift: string;
+}
+
+<hr gift={gift} />
+`),
+);
+
+test("render slot assuring outer expression for slotted items", async () => {
+    const html = await director.render(
+        "slot-outer",
+        {} as Context,
+        {},
+        { trim: true },
+    );
+    expect(html).toBe(`<main><div class="outer"><hr gift="Joy"></div></main>`);
+});
