@@ -1,25 +1,14 @@
-import { afterAll, expect, test } from "bun:test";
-import { mkdtempSync, rmdirSync } from "fs";
-import { tmpdir } from "os";
+import { expect, test } from "bun:test";
+import { makeTemporaryDirectory } from "~/lib/test";
 import { Context } from "~/server/context";
 import { Director } from "./director";
+import { MarkdownSource } from "./kinds/markdown/source";
 
-afterAll(() => {
-    rmdirSync(director.base!, { recursive: true });
-});
-
-const director = Director.shared;
-director.base = mkdtempSync(`${tmpdir()}/htmx-bun-`);
-
-test("director prepare", () => {
-    director.prepare("alpha", "const a = 1;");
-    const alpha = director.represent("alpha");
-    expect(alpha).toBeDefined();
-});
+const director = new Director(makeTemporaryDirectory());
 
 test("representation present", () => {
-    director.prepare("alpha", "const a = 1;");
+    director.prepare("alpha", new MarkdownSource("# Hello"));
     const alphaR = director.represent("alpha")!;
     const alphaP = alphaR.present({} as Context, {});
-    expect(1).toBe(1);
+    expect(alphaP).toBeDefined();
 });

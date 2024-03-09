@@ -1,70 +1,62 @@
 import { plugin } from "bun";
-import { existsSync } from "fs";
-import { resolve } from "path";
-import { warn } from "~/lib/log";
+import { existsSync, readFileSync } from "fs";
+import { info, warn } from "~/lib/log";
+import { watch } from "~/lib/watch";
 import { Artifact, Representation, Source } from ".";
+import { MarkdownSource } from "./kinds/markdown/source";
 
 /**
- * A singleton class that manages the list of prepared hypermedia
- * representations.
+ * Manages hypermedia representations and their modules.
  */
 export class Director {
-    public static readonly shared = new Director();
-
     /**
-     * The base lookup path for representation sources.  This is initially unset
-     * and may be set once only.
+     * @param base The base lookup path for representation sources.
      */
-    #base?: string;
-
-    constructor() {
-        if (Director.shared) {
-            throw new Error(
-                "Cannot instantiate another Director.  Access with Director.shared",
-            );
-        }
-    }
-
-    set base(base: string) {
-        if (this.#base) {
-            throw new Error("Director base path may only be set once");
-        }
-        this.#base = base;
-    }
-
-    get base(): string | undefined {
-        return this.#base;
-    }
+    constructor(readonly base?: string) {}
 
     private readonly representations: Map<string, Representation> = new Map();
 
     /**
-     * Compiles a string or source instance and registers with the
-     * module system and retains a mapping to it via the provided tag.
+     * Registers a source with the module system, imports it, and retains a mapping
+     * of the resulting representation.
      * @param tag The tag name.
      * @param source The string or source instance.
      */
-    prepare(tag: string, source: Source | string) {
+    prepare(tag: string, source: Source) {
         plugin({
             setup: ({ module }) => {
                 module(tag, () => {
                     return {
-                        contents:
-                            typeof source === "string"
-                                ? source
-                                : source.compile(),
+                        contents: source.code,
                         loader: "tsx",
                     };
                 });
             },
         });
         const artifact = require(tag) as Artifact;
-        const representation = new Representation(artifact);
+        const representation = new Representation(tag, artifact, source.path);
         this.representations.set(tag, representation);
     }
 
+    revert(tag: string) {
+        this.representations.delete(tag);
+    }
+
     watch() {
-        // Set up watcher
+        if (!this.base) {
+            return;
+        }
+        watch(this.base, async (_, path) => {
+            if (/\.(part|md)$/.test(path ?? "")) {
+                info("director", `reloading '${path}'`);
+                const rep = Array.from(this.representations.values()).find(
+                    (r) => r.path === path,
+                );
+                if (rep) {
+                    this.revert(rep.tag);
+                }
+            }
+        });
     }
 
     /**
@@ -86,6 +78,12 @@ export class Director {
                 warn("compositor", `No representation found for '${tag}'`);
                 return;
             }
+            const text = readFileSync(path, "utf8");
+            const source = new MarkdownSource(
+                text,
+                path.replace(new RegExp(`^${this.base}/`), ""),
+            );
+            this.prepare(tag, source);
             // try {
             //     if (path.endsWith(".part")) {
             //         const module = require(path) as PartialModule;
@@ -132,7 +130,7 @@ export class Director {
             ];
             for (const path of possibles) {
                 if (existsSync(path)) {
-                    return resolve(path);
+                    return path;
                 }
             }
         }

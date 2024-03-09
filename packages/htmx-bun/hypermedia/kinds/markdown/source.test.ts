@@ -10,6 +10,5 @@ async function action() { return {}; }
 `;
 test("compile", () => {
     const source = new MarkdownSource(source1);
-    console.log(source.code);
     expect(source.code).toBe(target1);
 });

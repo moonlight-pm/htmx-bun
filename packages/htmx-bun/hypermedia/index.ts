@@ -16,7 +16,10 @@ export abstract class Source {
     /**
      * @param text The text content of the source.
      */
-    constructor(protected readonly text: string) {}
+    constructor(
+        protected readonly text: string,
+        readonly path?: string,
+    ) {}
     abstract readonly kind: ArtifactKind;
 
     /**
@@ -76,7 +79,11 @@ export interface Artifact {
 export class Representation {
     private template: HtmlFragment;
 
-    constructor(readonly artifact: Artifact) {
+    constructor(
+        readonly tag: string,
+        readonly artifact: Artifact,
+        readonly path?: string,
+    ) {
         this.template = this.artifact.template
             ? parseSource(this.artifact.template)
             : createHtmlFragment();
