@@ -77,6 +77,8 @@ export type HtmlWalkVisitor = (
     fns: HtmlWalkVisitFunctions,
 ) => void;
 
+export type HtmlSimpleWalkVisitor = (node: HtmlNode) => void;
+
 export function walkHtml(node: HtmlNode, visit: HtmlWalkVisitor) {
     function visitEachChild(node: HtmlNode) {
         if (node.type === "fragment" || node.type === "element") {
@@ -86,4 +88,11 @@ export function walkHtml(node: HtmlNode, visit: HtmlWalkVisitor) {
         }
     }
     visit(node, { visitEachChild });
+}
+
+export function simpleWalkHtml(node: HtmlNode, visit: HtmlSimpleWalkVisitor) {
+    walkHtml(node, (node, { visitEachChild }) => {
+        visit(node);
+        visitEachChild(node);
+    });
 }

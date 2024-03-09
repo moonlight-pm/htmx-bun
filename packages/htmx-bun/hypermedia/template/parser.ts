@@ -3,13 +3,16 @@ import {
     HtmlElementAttributeValue,
     HtmlFragment,
     HtmlNode,
+    Scope,
+    createHtmlElement,
+    createHtmlExpression,
     createHtmlFragment,
-    voids,
+    createHtmlText,
 } from "./ast";
 import { Token, TokenType, scanPartial } from "./scanner";
 
-export function parseSource(source: string) {
-    const parser = new Parser(source);
+export function parseSource(source: string, scope: Scope = {}) {
+    const parser = new Parser(source, scope);
     return parser.parse() as HtmlFragment;
 }
 
@@ -19,10 +22,12 @@ class Parser {
     stack: HtmlNode[];
     position = 0;
 
-    constructor(source: string) {
+    constructor(source: string, scope: Scope = {}) {
         this.source = source;
         this.tokens = scanPartial(this.source);
-        this.stack = [createHtmlFragment()];
+        const root = createHtmlFragment();
+        root.scope = scope;
+        this.stack = [root];
     }
 
     get top(): HtmlElement {
@@ -59,14 +64,11 @@ class Parser {
                 break;
             }
             case TokenType.TagName: {
-                const element: HtmlElement = {
-                    type: "element",
-                    parent: this.top,
-                    tag: this.token.value,
-                    void: voids.includes(this.token.value),
-                    attrs: [],
-                    children: [],
-                };
+                const element = createHtmlElement(
+                    this.top,
+                    this.token.value,
+                    [],
+                );
                 this.top.children.push(element);
                 this.stack.push(element);
                 this.position++;
@@ -96,7 +98,6 @@ class Parser {
                     this.position++;
                 }
                 this.top.attrs.push({ name, value });
-                // this.position++;
                 break;
             }
             case TokenType.OpenAngleBracket: {
@@ -122,20 +123,19 @@ class Parser {
                 break;
             }
             case TokenType.Expression: {
-                this.top.children.push({
-                    parent: this.top,
-                    type: "expression",
-                    content: this.token.value.slice(1, -1),
-                });
+                this.top.children.push(
+                    createHtmlExpression(
+                        this.top,
+                        this.token.value.slice(1, -1),
+                    ),
+                );
                 this.position++;
                 break;
             }
             case TokenType.Text: {
-                this.top.children.push({
-                    parent: this.top,
-                    type: "text",
-                    content: this.token.value,
-                });
+                this.top.children.push(
+                    createHtmlText(this.top, this.token.value),
+                );
                 this.position++;
                 break;
             }

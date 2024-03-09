@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { simpleWalkHtml } from ".";
 import { parseSource } from "./parser";
 import { printHtml } from "./printer";
 
@@ -37,4 +38,11 @@ const source4 = `<html>
 test("void tags in there", () => {
     const ast = parseSource(source4);
     expect(printHtml(ast)).toBe(source4);
+});
+
+test("scope", () => {
+    const ast = parseSource(source4, { gift: "kindness" });
+    simpleWalkHtml(ast, (node) => {
+        expect(node.scope.gift).toBe("kindness");
+    });
 });

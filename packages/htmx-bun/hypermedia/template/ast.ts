@@ -19,22 +19,27 @@ export const voids = [
     "wbr",
 ];
 
+export type Scope = Record<string, unknown>;
+
 export type HtmlFragment = {
     type: "fragment";
     parent?: HtmlParent;
     children: HtmlNode[];
+    scope: Scope;
 };
 
 export type HtmlText = {
     type: "text";
     parent: HtmlParent;
     content: string;
+    scope: Scope;
 };
 
 export type HtmlExpression = {
     type: "expression";
     parent: HtmlParent;
     content: string;
+    scope: Scope;
 };
 
 export type HtmlElement = {
@@ -44,6 +49,7 @@ export type HtmlElement = {
     tag: string;
     void: boolean;
     attrs: HtmlElementAttribute[];
+    scope: Scope;
 };
 
 export type HtmlElementAttribute = {
@@ -74,6 +80,7 @@ export const createHtmlFragment = (
     type: "fragment",
     parent,
     children,
+    scope: Object.create(parent?.scope || null),
 });
 
 export const createHtmlElement = (
@@ -93,6 +100,7 @@ export const createHtmlElement = (
               value: [{ type: "text", content: String(value) }],
           })),
     children,
+    scope: Object.create(parent.scope),
 });
 
 export const createHtmlText = (
@@ -102,4 +110,15 @@ export const createHtmlText = (
     type: "text",
     parent,
     content,
+    scope: Object.create(parent.scope),
+});
+
+export const createHtmlExpression = (
+    parent: HtmlParent,
+    content: string,
+): HtmlExpression => ({
+    type: "expression",
+    parent,
+    content,
+    scope: Object.create(parent.scope),
 });
