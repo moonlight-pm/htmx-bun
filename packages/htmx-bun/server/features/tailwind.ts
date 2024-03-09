@@ -4,7 +4,7 @@ import { existsSync } from "fs";
 import postcss from "postcss";
 import { mergeDeepWith } from "ramda";
 import tailwind, { Config as TailwindConfig } from "tailwindcss";
-import { createHtmlElement } from "~/view/partial/ast";
+import { createHtmlElement } from "~/compositor/partial/ast";
 import { ServerFeature } from ".";
 
 export default function (): ServerFeature {

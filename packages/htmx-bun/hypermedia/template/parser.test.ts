@@ -1,22 +1,22 @@
 import { expect, test } from "bun:test";
-import { parsePartial } from "./parser";
+import { parseSource } from "./parser";
 import { printHtml } from "./printer";
 
 const source1 = `<item id="1" class={item.class}>{item.name}</item>\n`;
 test("parser", () => {
-    const ast = parsePartial(source1);
+    const ast = parseSource(source1);
     expect(printHtml(ast)).toBe(source1);
 });
 
 const source2 = `<div><input id="i" focus></div>\n`;
 test("void tag", () => {
-    const ast = parsePartial(source2);
+    const ast = parseSource(source2);
     expect(printHtml(ast)).toBe(source2);
 });
 
 const source3 = `<div class="foo {item.cls} baz" id={id}></div>\n`;
 test("complex attribute", () => {
-    const ast = parsePartial(source3);
+    const ast = parseSource(source3);
     expect(printHtml(ast)).toBe(source3);
 });
 
@@ -35,6 +35,6 @@ const source4 = `<html>
 </html>
 `;
 test("void tags in there", () => {
-    const ast = parsePartial(source4);
+    const ast = parseSource(source4);
     expect(printHtml(ast)).toBe(source4);
 });

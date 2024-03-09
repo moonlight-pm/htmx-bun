@@ -1,19 +1,21 @@
 import chalk from "chalk";
 import { P, match } from "ts-pattern";
 import { URL } from "url";
+import { Compositor, View } from "~/compositor";
+import { MarkdownTemplate } from "~/compositor/markdown/template";
+import { PartialView } from "~/compositor/partial/view";
 import { error, info, warn } from "~/lib/log";
 import { watch } from "~/lib/watch";
-import { MarkdownTemplate } from "~/view/markdown/template";
-import { PartialView } from "~/view/partial/view";
-import { Register, View } from "~/view/register";
 import { Context } from "./context";
 import { buildFeatures } from "./features";
 import { ServerOptions } from "./options";
 
 export async function buildFetch(options: ServerOptions) {
     const features = await buildFeatures(options);
-    const register = new Register("public");
-    await register.initialize();
+    const register = new Compositor();
+    register.addDirectory("public");
+    // register.watchForChanges();
+    // await register.initialize();
 
     if (options?.features?.dev) {
         info("server", "watching 'public' directory...");

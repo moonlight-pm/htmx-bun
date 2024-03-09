@@ -1,11 +1,11 @@
 import { HtmlElementAttribute, HtmlNode } from "./ast";
-import { parsePartial } from "./parser";
+import { parseSource } from "./parser";
 import { walkHtml } from "./transform";
 
 export function printHtml(htmlOrNode: string | HtmlNode): string {
     const html =
         typeof htmlOrNode === "string"
-            ? parsePartial(htmlOrNode)
+            ? parseSource(htmlOrNode)
             : structuredClone(htmlOrNode);
     const text: string[] = [];
     walkHtml(html, (node, { visitEachChild }) => {

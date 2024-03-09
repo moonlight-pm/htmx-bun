@@ -8,7 +8,7 @@ import {
 } from "./ast";
 import { Token, TokenType, scanPartial } from "./scanner";
 
-export function parsePartial(source: string) {
+export function parseSource(source: string) {
     const parser = new Parser(source);
     return parser.parse() as HtmlFragment;
 }

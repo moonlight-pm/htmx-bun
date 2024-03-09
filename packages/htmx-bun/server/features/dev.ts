@@ -2,7 +2,7 @@ import EventEmitter from "events";
 import { formatTypeScript } from "~/lib/format";
 import { info } from "~/lib/log";
 import { watch } from "~/lib/watch";
-import { createHtmlElement } from "~/view/partial/ast";
+import { createHtmlElement } from "~/compositor/partial/ast";
 import { ServerFeature } from ".";
 import { ServerOptions } from "../options";
 

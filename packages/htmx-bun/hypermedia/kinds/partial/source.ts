@@ -1,104 +1,63 @@
 import * as ts from "typescript";
-import { HtmlFragment } from "./ast";
-import { parsePartial } from "./parser";
-import { printHtml } from "./printer";
-import { htmlStartIndex } from "./scanner";
-import { walkHtml } from "./transform";
+import { AttributeTypeString, AttributeTypes, Source } from "~/hypermedia";
+import {
+    HtmlFragment,
+    htmlStartIndex,
+    parseSource,
+    printHtml,
+    walkHtml,
+} from "~/hypermedia/template";
 
 /**
- * Represents an attribute for a partia/tag.
+ * A `.part` source file composed of an upper code section (action) and
+ * a subsequent html section (template).  Both are optional.
  */
-export interface Attribute {
-    name: string;
-    type: string;
-}
+export class PartialSource extends Source {
+    readonly kind = "partial";
 
-export type Attributes = Attribute[];
-
-/**
- * The PartialSource class is responsible for reading an htmx-bun partial `.part` file,
- * disentangling into script and html parts, and returning the source code as TypeScript.
- */
-export class PartialSource {
-    #text!: string;
-    #html!: HtmlFragment;
-    #code!: ts.SourceFile;
+    #template!: HtmlFragment;
+    #action!: ts.SourceFile;
     #attributes?: ts.InterfaceDeclaration;
-
-    /**
-     * Creates a new instance of the Source class from a string.
-     * @param path The path of the source.
-     */
-    constructor(text: string) {
-        this.#text = text;
-    }
-
-    /**
-     * Creates a new instance of the Source class from a path.
-     * @param path The path of the source.
-     */
-    static async fromPath(path: string) {
-        return new PartialSource(await Bun.file(path).text());
-    }
 
     /**
      * Compile the partial source into TypeScript that can be loaded as a module by the loader plugin.
      * @returns The TypeScript source code for the partial.
      */
-    async compile() {
-        const code: string[] = [
-            this.#text.slice(0, htmlStartIndex(this.#text)),
-        ];
-        this.#html = parsePartial(this.#text);
-        this.#code = ts.createSourceFile(
+    compile() {
+        this.#template = parseSource(this.text);
+        this.#action = ts.createSourceFile(
             "",
-            code.join("\n"),
+            this.text.slice(0, htmlStartIndex(this.text)),
             ts.ScriptTarget.Latest,
             true,
         );
         this.transformExpressions();
-        this.transformCode();
-        return [
-            `export const attributes = ${JSON.stringify(this.attributes)};`,
-            `export const html = ${JSON.stringify(this.html)};`,
-            "",
-            this.code,
-        ].join("\n");
+        this.tranformAction();
     }
 
-    /**
-     * Prints the internalathe serialized HTML
-     * @returns The serialized HTML.
-     */
-    private get html() {
-        return printHtml(this.#html);
+    get action() {
+        return ts.createPrinter().printFile(this.#action);
     }
 
-    /**
-     * Prints the internal TypeScript code.
-     * @returns The TypeScript code.
-     */
-    private get code() {
-        return ts.createPrinter().printFile(this.#code);
-    }
-
-    private get attributes() {
-        const attributes: Attributes = [];
+    get attributes() {
+        const attributes: AttributeTypes = {};
         if (this.#attributes) {
             for (const member of this.#attributes.members) {
                 if (ts.isPropertySignature(member) && member.type) {
-                    attributes.push({
-                        name: member.name.getText(),
-                        type: member.type.getText(),
-                    });
+                    attributes[member.name.getText()] =
+                        member.type.getText() as AttributeTypeString;
                 }
             }
         }
-        return attributes;
+        return JSON.stringify(attributes);
+    }
+
+    get template() {
+        return JSON.stringify(printHtml(this.#template));
     }
 
     private transformExpressions() {
-        walkHtml(this.#html, (node, { visitEachChild }) => {
+        walkHtml(this.#template, (node, { visitEachChild }) => {
             if (node.type === "fragment") {
                 visitEachChild(node);
                 return;
@@ -194,7 +153,7 @@ export class PartialSource {
      * to the function that encloses the partial code, provided to it's local namespace.
      * @private
      */
-    private transformCode() {
+    private tranformAction() {
         const locals: string[] = ["Context", "Attributes"];
         const transformer: ts.TransformerFactory<ts.SourceFile> = (context) => {
             return (root) => {
@@ -233,15 +192,14 @@ export class PartialSource {
                     ts.factory.createFunctionDeclaration(
                         [
                             ts.factory.createToken(ts.SyntaxKind.ExportKeyword),
-                            ts.factory.createToken(
-                                ts.SyntaxKind.DefaultKeyword,
-                            ),
+                            // ts.factory.createToken(
+                            //     ts.SyntaxKind.DefaultKeyword,
+                            // ),
                             ts.factory.createToken(ts.SyntaxKind.AsyncKeyword),
                         ],
                         undefined,
+                        ts.factory.createIdentifier("action"),
                         undefined,
-                        undefined,
-
                         [
                             ts.factory.createParameterDeclaration(
                                 undefined,
@@ -290,7 +248,7 @@ export class PartialSource {
                 return root;
             };
         };
-        const result = ts.transform(this.#code, [transformer]);
-        this.#code = result.transformed[0];
+        const result = ts.transform(this.#action, [transformer]);
+        this.#action = result.transformed[0];
     }
 }

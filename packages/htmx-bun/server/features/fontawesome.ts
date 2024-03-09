@@ -1,5 +1,5 @@
 import { dirname } from "path";
-import { createHtmlElement } from "~/view/partial/ast";
+import { createHtmlElement } from "~/compositor/partial/ast";
 import { ServerFeature } from ".";
 
 export default function (): ServerFeature {

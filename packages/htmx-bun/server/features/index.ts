@@ -1,7 +1,7 @@
 import { info } from "~/lib/log";
 import { Context } from "~/server/context";
 import { ServerOptions } from "~/server/options";
-import { HtmlTransformVisitor } from "~/view/partial/transform";
+import { HtmlTransformVisitor } from "~/compositor/partial/transform";
 
 export type FeatureFactory = (
     options: ServerOptions,
