@@ -1,6 +1,5 @@
 import chalk from "chalk";
 import { P, match } from "ts-pattern";
-import { URL } from "url";
 import { Director } from "~/hypermedia/director";
 import { Presentation } from "~/hypermedia/presentation";
 import { error, info, warn } from "~/lib/log";
@@ -52,53 +51,42 @@ export async function buildFetch(options: ServerOptions) {
     };
 
     async function renderPartial(context: Context) {
-        // const url = new URL(context.request.url);
-        // const tag = (url.pathname.slice(1) || "root").replace(/\//g, "-");
-        // if (/^[a-z][-a-z0-9]+$/.test(tag) && register.get(tag)) {
-        //     const view = register.get(tag)?.present(context);
-        //     if (!view) {
-        //         return;
-        //     }
-        //     const attributes: Record<string, string> = {};
-        //     url.searchParams.forEach((value, name) => {
-        //         attributes[name] = value;
-        //     });
-        //     if (view) {
-        //         let content = "";
-        //         await view.assemble(attributes);
-        //         if (view instanceof PartialView) {
-        //             if (!context.renderCanceled) {
-        //                 await featureTransforms(view);
-        //                 content = await view.render();
-        //             }
-        //             for (const oob of context.oobs) {
-        //                 const oobView = register.get(oob.tag)?.present(context);
-        //                 if (!oobView || !(oobView instanceof PartialView)) {
-        //                     warn("view", `OOB view not found: ${oob.tag}`);
-        //                     continue;
-        //                 }
-        //                 content += await oobView.render(oob.attributes);
-        //             }
-        //         } else {
-        //             content = await view.render();
-        //         }
-        //         context.response = new Response(content, {
-        //             headers: {
-        //                 "Content-Type": "text/html;charset=utf-8",
-        //             },
-        //         });
-        //     }
-        // }
+        const tag =
+            context.url.pathname.slice(1).replace(/\//g, "-") || "layout";
+        const rep = await director.represent(tag);
+        if (!rep) {
+            return;
+        }
+        const content: string[] = [];
+        const pres = await rep.present(context, context.form);
+        await pres.activate();
+
+        if (!context.renderCanceled) {
+            await pres.compose();
+            await pres.flatten();
+            await featureTransforms(pres);
+            content.push(pres.render());
+        }
+        for (const oob of context.oobs) {
+            if (await director.represent(oob.tag)) {
+                content.push(await director.render(oob.tag, context));
+            } else {
+                warn("view", `OOB view not found: ${oob.tag}`);
+            }
+        }
+        context.response = new Response(content.join("\n"), {
+            headers: {
+                "Content-Type": "text/html;charset=utf-8",
+            },
+        });
     }
 
     async function renderFull(context: Context) {
-        const url = new URL(context.request.url);
-        const pathway = url.pathname.slice(1).split("/").filter(Boolean);
+        const pathway = context.url.pathname
+            .slice(1)
+            .split("/")
+            .filter(Boolean);
         let pres: Presentation | undefined;
-
-        // if (pathway.length === 0) {
-        //     pathway.push("root");
-        // }
 
         for (let i = 0; i < pathway.length; i++) {
             const tag = pathway.slice(i, pathway.length + 1 - 1).join("-");

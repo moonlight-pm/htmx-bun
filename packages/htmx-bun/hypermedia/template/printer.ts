@@ -12,9 +12,7 @@ export function printHtml(
 ): string {
     const { trim } = Object.assign({ trim: false }, options);
     const html =
-        typeof htmlOrNode === "string"
-            ? parseSource(htmlOrNode)
-            : structuredClone(htmlOrNode);
+        typeof htmlOrNode === "string" ? parseSource(htmlOrNode) : htmlOrNode;
     let text: string[] = [];
     walkHtml(html, (node, { visitEachChild }) => {
         if (node.type === "fragment") {
@@ -23,8 +21,10 @@ export function printHtml(
         }
         if (node.type === "element") {
             // Remove the checked attribute on inputs if their value is "false"
+            // XXX: This is clunky
+            let attrs = structuredClone(node.attrs);
             if (node.tag === "input") {
-                node.attrs = node.attrs.filter((attr) =>
+                attrs = attrs.filter((attr) =>
                     attr.name === "checked" &&
                     concatAttributeValue(attr) === "false"
                         ? undefined
@@ -33,7 +33,7 @@ export function printHtml(
             }
             text.push("<");
             text.push(node.tag);
-            for (const attr of node.attrs) {
+            for (const attr of attrs) {
                 if (attr.value.length === 0) {
                     text.push(` ${attr.name}`);
                     continue;

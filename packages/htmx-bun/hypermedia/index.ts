@@ -108,7 +108,7 @@ export class Representation {
      * @param attributes The attribute values passed into this presentation instance.
      * @returns
      */
-    present(context: Context, attributes: Attributes): Presentation {
+    present(context: Context, attributes: Attributes = {}): Presentation {
         // if (this.artifact.kind === "markdown") {
         const template = cloneHtml(this.template) as HtmlFragment;
         return new Presentation(
