@@ -9,8 +9,8 @@ export class SimpleVirtualCode implements VirtualCode {
     constructor(
         public id: string,
         public languageId: string,
-        offset: number,
         text: string,
+        offset: number,
     ) {
         this.snapshot = {
             getText: (start, end) => text.slice(start, end),
@@ -24,7 +24,7 @@ export class SimpleVirtualCode implements VirtualCode {
                 lengths: [text.length],
                 data: {
                     completion: true,
-                    format: false,
+                    format: true,
                     navigation: true,
                     semantic: true,
                     structure: true,

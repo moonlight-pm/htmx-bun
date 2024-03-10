@@ -4,9 +4,8 @@ import type { IScriptSnapshot } from "typescript";
 //     TextDocument,
 //     getLanguageService as getHtmlLanguageService,
 // } from "vscode-html-languageservice";
-import { SimpleVirtualCode } from "./simple";
 
-import { htmlStartIndex } from "htmx-bun/hypermedia/template";
+import { SimpleVirtualCode } from "./simple";
 
 export class PartialVirtualCode implements VirtualCode {
     languageId = "partial";
@@ -31,7 +30,7 @@ export class PartialVirtualCode implements VirtualCode {
                 lengths: [text.length],
                 data: {
                     completion: true,
-                    format: true,
+                    format: false,
                     navigation: true,
                     semantic: true,
                     structure: true,
@@ -40,10 +39,30 @@ export class PartialVirtualCode implements VirtualCode {
             },
         ];
         this.embeddedCodes = [];
-        // const html = text.slice(htmlStartIndex(text));
-        this.embeddedCodes.push(
-            new SimpleVirtualCode("html", "html", htmlStartIndex(text), text),
-        );
+        const htmlStartIndex = text.search(/\n^<\w+/m);
+        if (htmlStartIndex !== -1) {
+            this.embeddedCodes.push(
+                new SimpleVirtualCode(
+                    "typescript",
+                    "typescript",
+                    text.slice(0, htmlStartIndex),
+                    0,
+                ),
+            );
+            this.embeddedCodes.push(
+                new SimpleVirtualCode(
+                    "html",
+                    "html",
+                    text.slice(htmlStartIndex),
+                    htmlStartIndex,
+                    // text.slice(htmlStartIndex),
+                ),
+            );
+        } else {
+            this.embeddedCodes.push(
+                new SimpleVirtualCode("typescript", "typescript", text, 0),
+            );
+        }
         // const document = getHtmlLanguageService().parseHTMLDocument(
         //     TextDocument.create("", "html", 0, text),
         // );

@@ -24,7 +24,7 @@ export const partialLanguage: LanguagePlugin = {
             },
         ],
         getScript(rootCode) {
-            for (const code of rootCode.embeddedCodes[0].embeddedCodes) {
+            for (const code of rootCode.embeddedCodes) {
                 if (code.languageId === "typescript") {
                     return {
                         code,
@@ -33,6 +33,7 @@ export const partialLanguage: LanguagePlugin = {
                     };
                 }
             }
+            return undefined;
         },
     },
 };
