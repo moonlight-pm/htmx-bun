@@ -3,7 +3,7 @@ import { model, saveModel } from "~/lib/model";
 interface Attributes {
     id: number;
     toggle?: boolean;
-    text?: text;
+    text?: string;
     destroy?: boolean;
 }
 

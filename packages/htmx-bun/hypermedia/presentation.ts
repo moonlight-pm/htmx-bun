@@ -25,7 +25,7 @@ export class Presentation {
         protected readonly representation: Representation,
         readonly template: HtmlFragment,
         protected readonly context: Context,
-        protected readonly attributes: Attributes,
+        protected attributes: Attributes,
     ) {}
 
     /**
@@ -33,6 +33,7 @@ export class Presentation {
      * and the attributes passed into this presentation instance.
      */
     async activate(): Promise<void> {
+        this.coerceAttributes();
         Object.assign(
             this.template.scope,
             this.attributes,
@@ -119,5 +120,26 @@ export class Presentation {
             }
             return node;
         });
+    }
+
+    coerceAttributes() {
+        const attributes: Attributes = {};
+        for (const [key, type] of Object.entries(
+            this.representation.artifact.attributes,
+        )) {
+            if (type === "number") {
+                attributes[key] = Number(this.attributes[key]);
+            } else if (type === "boolean") {
+                attributes[key] = Boolean(this.attributes[key]);
+            } else {
+                // warn(
+                //     "presentation",
+                //     `Unknown attribute type: ${type}`,
+                //     this.representation.artifact.attributes,
+                // );
+                attributes[key] = this.attributes[key];
+            }
+        }
+        this.attributes = attributes;
     }
 }

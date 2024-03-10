@@ -80,11 +80,11 @@ interface Attributes {
     name: string;
 }
 
-<li id={id}>{name}</li>
+<li id={id} type={typeof id}>{name}</li>
 `),
 );
 
-test("render todo list", async () => {
+test("render todo list, check types", async () => {
     const html = await director.render(
         "todo-list",
         {} as Context,
@@ -92,7 +92,7 @@ test("render todo list", async () => {
         { trim: true },
     );
     expect(html).toBe(
-        `<ul><li id="1">Love</li><li id="2">Joy</li><li id="3">Peace</li></ul>`,
+        `<ul><li id="1" type="number">Love</li><li id="2" type="number">Joy</li><li id="3" type="number">Peace</li></ul>`,
     );
 });
 

@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>htmx-bun: documenation</title>
+        <title>htmx-bun: documentation</title>
         <link rel="icon" type="image/png" href="/assets/icon-light.png">
     </head>
     <body class="flex flex-col bg-slate-700 text-white p-2">
