@@ -6,8 +6,8 @@ import {
 } from "vscode-html-languageservice";
 import { SimpleVirtualCode } from "./simple";
 
-export class MontanaVirtualCode implements VirtualCode {
-    languageId = "montana";
+export class PartialVirtualCode implements VirtualCode {
+    languageId = "partial";
     snapshot: IScriptSnapshot;
     mappings: CodeMapping[];
     embeddedCodes: VirtualCode[];

@@ -1,4 +1,4 @@
-name: Montana
+name: Partial
 scopeName: source.part
 patterns:
   - contentName: meta.embedded.block.html

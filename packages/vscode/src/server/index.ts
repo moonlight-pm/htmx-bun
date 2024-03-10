@@ -1,11 +1,12 @@
 import {
     createConnection,
     createServer,
-    createTypeScriptProjectProvider,
+    createTypeScriptProjectProviderFactory,
+    loadTsdkByPath,
 } from "@volar/language-server/node";
 import { create as createHtmlService } from "volar-service-html";
 import { create as createTypeScriptService } from "volar-service-typescript";
-import { montanaLanguage, montanaService } from "./language/montana";
+import { partialLanguage, partialService } from "./language/partial";
 
 const connection = createConnection();
 const server = createServer(connection);
@@ -13,18 +14,30 @@ const server = createServer(connection);
 connection.listen();
 
 connection.onInitialize((params) => {
-    return server.initialize(params, createTypeScriptProjectProvider, {
-        getLanguagePlugins() {
-            return [montanaLanguage];
+    console.log("INITIALIZING");
+    const tsdk = loadTsdkByPath(
+        params.initializationOptions.typescript.tsdk,
+        params.locale,
+    );
+    return server.initialize(
+        params,
+        createTypeScriptProjectProviderFactory(
+            tsdk.typescript,
+            tsdk.diagnosticMessages,
+        ),
+        {
+            getLanguagePlugins() {
+                return [partialLanguage];
+            },
+            getServicePlugins() {
+                return [
+                    createHtmlService(),
+                    createTypeScriptService(tsdk.typescript),
+                    partialService,
+                ];
+            },
         },
-        getServicePlugins() {
-            return [
-                createHtmlService(),
-                createTypeScriptService(server.modules.typescript),
-                montanaService,
-            ];
-        },
-    });
+    );
 });
 
 connection.onInitialized(server.initialized);
