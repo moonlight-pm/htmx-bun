@@ -18,12 +18,12 @@ export async function activate(context) {
         "htmx-bun Language Server",
         {
             run: {
-                module: module,
+                module,
                 transport: TransportKind.ipc,
                 options: { execArgv: [] },
             },
             debug: {
-                module: module,
+                module,
                 transport: TransportKind.ipc,
                 options: { execArgv: ["--nolazy", "--inspect=6009"] },
             },
@@ -42,6 +42,7 @@ export async function activate(context) {
     const labs = createLabsInfo(serverProtocol);
     labs.addLanguageClient(client);
 
+    console.log("ACTIVATION COMPLETE");
     return labs.extensionExports;
 }
 

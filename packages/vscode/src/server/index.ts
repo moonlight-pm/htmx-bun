@@ -4,40 +4,40 @@ import {
     createTypeScriptProjectProviderFactory,
     loadTsdkByPath,
 } from "@volar/language-server/node";
-import { create as createHtmlService } from "volar-service-html";
+// import { create as createHtmlService } from "volar-service-html";
 import { create as createTypeScriptService } from "volar-service-typescript";
-import { partialLanguage, partialService } from "./language/partial";
+// import { partialLanguage, partialService } from "./language/partial";
 
 const connection = createConnection();
 const server = createServer(connection);
 
 connection.listen();
 
-connection.onInitialize((params) => {
-    console.log("INITIALIZING");
-    const tsdk = loadTsdkByPath(
+connection.onInitialize(async (params) => {
+    console.log("INITIALIZING", params.initializationOptions);
+    const { typescript, diagnosticMessages } = loadTsdkByPath(
         params.initializationOptions.typescript.tsdk,
         params.locale,
     );
-    return server.initialize(
+    const result = server.initialize(
         params,
-        createTypeScriptProjectProviderFactory(
-            tsdk.typescript,
-            tsdk.diagnosticMessages,
-        ),
+        createTypeScriptProjectProviderFactory(typescript, diagnosticMessages),
         {
-            getLanguagePlugins() {
-                return [partialLanguage];
-            },
             getServicePlugins() {
                 return [
-                    createHtmlService(),
-                    createTypeScriptService(tsdk.typescript),
-                    partialService,
+                    // createHtmlService(),
+                    createTypeScriptService(typescript),
+                    // partialService,
                 ];
+            },
+            getLanguagePlugins(serviceEnv, projectContext) {
+                // return [partialLanguage];
+                return [];
             },
         },
     );
+    console.log("INITIALIZING DONE");
+    return result;
 });
 
 connection.onInitialized(server.initialized);
