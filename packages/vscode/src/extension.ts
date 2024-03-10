@@ -7,7 +7,7 @@ let client: LanguageClient;
 
 export async function activate(context) {
     console.log("ACTIVATE");
-    const module = Uri.joinPath(
+    const serverPath = Uri.joinPath(
         context.extensionUri,
         "dist",
         "server",
@@ -18,12 +18,12 @@ export async function activate(context) {
         "htmx-bun Language Server",
         {
             run: {
-                module,
+                module: serverPath,
                 transport: TransportKind.ipc,
                 options: { execArgv: [] },
             },
             debug: {
-                module,
+                module: serverPath,
                 transport: TransportKind.ipc,
                 options: { execArgv: ["--nolazy", "--inspect=6009"] },
             },

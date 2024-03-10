@@ -1,5 +1,5 @@
-import { LanguagePlugin } from "@volar/language-core";
-import { ServicePlugin } from "@volar/language-service";
+import type { LanguagePlugin } from "@volar/language-core";
+import type { ServicePlugin } from "@volar/language-service";
 import { ScriptKind } from "typescript";
 import { PartialVirtualCode } from "../virtual-code/partial";
 

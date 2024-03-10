@@ -19,7 +19,7 @@
     "contributes": {
         "languages": [
             {
-                "id": "htmx-bun",
+                "id": "partial",
                 "aliases": ["htmx-bun"],
                 "extensions": [".part"],
                 "configuration": "./grammars/htmx-bun.json",
@@ -31,7 +31,7 @@
         ],
         "grammars": [
             {
-                "language": "htmx-bun",
+                "language": "partial",
                 "scopeName": "source.part",
                 "path": "./dist/htmx-bun.tmLanguage.json",
                 "embeddedLanguages": {

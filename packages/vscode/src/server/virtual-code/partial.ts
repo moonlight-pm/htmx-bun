@@ -1,5 +1,5 @@
-import { CodeMapping, VirtualCode } from "@volar/language-core";
-import { IScriptSnapshot } from "typescript";
+import type { CodeMapping, VirtualCode } from "@volar/language-core";
+import type { IScriptSnapshot } from "typescript";
 import {
     TextDocument,
     getLanguageService as getHtmlLanguageService,
