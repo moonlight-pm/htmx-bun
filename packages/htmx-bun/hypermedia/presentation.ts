@@ -11,17 +11,19 @@ import {
     HtmlElement,
     HtmlFragment,
     HtmlNode,
+    HtmlSimpleTransformVisitor,
     PrintHtmlOptions,
     htmlTags,
     printHtml,
     simpleTransformHtml,
+    simpleWalkHtml,
 } from "./template";
 
 export class Presentation {
     constructor(
         private readonly director: Director,
         protected readonly representation: Representation,
-        protected readonly template: HtmlFragment,
+        readonly template: HtmlFragment,
         protected readonly context: Context,
         protected readonly attributes: Attributes,
     ) {}
@@ -47,46 +49,58 @@ export class Presentation {
     }
 
     /**
+     * "Flatten" all remaining expressions into strings.
+     */
+    async flatten() {
+        transformExpressionsIntoStrings(this.template);
+    }
+
+    /**
+     * Transforms the template with the supplied visitor function.
+     * @param visit The supplied visitor function.
+     */
+    transform(visit: HtmlSimpleTransformVisitor) {
+        simpleTransformHtml(this.template, visit);
+    }
+
+    /**
      * Transforms a copy of the template evaluating all expressions into
      * strings, returning the final html string.
      * @returns
      */
     render(options: Partial<PrintHtmlOptions> = {}) {
-        transformExpressionsIntoStrings(this.template);
         return printHtml(this.template, options);
     }
 
     /**
-     * Recursively searches the html ast and resolves embedded hypermedia tags,
+     * Walks the html ast and resolves embedded hypermedia tags,
      * replacing them with their composed presentation.
      */
     async transformComposedHypermedia() {
-        const queue: [HtmlElement, Presentation][] = [];
-        simpleTransformHtml(this.template, (node) => {
-            if (node.type === "element") {
-                if (node.tag === "slot") {
-                    return node;
-                }
-                if (htmlTags.includes(node.tag)) {
-                    return node;
-                }
-                const rep = this.director.represent(node.tag);
-                if (!rep) {
-                    warn(
-                        "presentation",
-                        `No representation found for '${node.tag}'`,
-                    );
-                    return node;
-                }
-                const attributes = expressDefinedAttributesToStrings(
-                    node,
-                    rep.artifact.attributes,
-                );
-                queue.push([node, rep.present(this.context, attributes)]);
+        const candidates: HtmlElement[] = [];
+        simpleWalkHtml(this.template, (node) => {
+            if (
+                node.type === "element" &&
+                node.tag !== "slot" &&
+                !htmlTags.includes(node.tag)
+            ) {
+                candidates.push(node);
             }
-            return node;
         });
-        for (const [node, presentation] of queue) {
+        for (const node of candidates) {
+            const rep = await this.director.represent(node.tag);
+            if (!rep) {
+                warn(
+                    "presentation",
+                    `No representation found for '${node.tag}'`,
+                );
+                return node;
+            }
+            const attributes = expressDefinedAttributesToStrings(
+                node,
+                rep.artifact.attributes,
+            );
+            const presentation = rep.present(this.context, attributes);
             await presentation.activate();
             await presentation.compose();
             presentation.replaceSlotWith(node.children);

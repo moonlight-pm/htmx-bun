@@ -35,7 +35,7 @@ export abstract class Source {
      * The source code for the action function.
      */
     get action() {
-        return "async function action() { return {}; }\n";
+        return "export async function action() { return {}; }\n";
     }
 
     /**

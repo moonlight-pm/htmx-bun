@@ -6,10 +6,10 @@ import { PartialSource } from "./kinds/partial/source";
 
 const director = new Director();
 
-test("representation present", () => {
-    director.prepare("alpha", new MarkdownSource("# Hello"));
-    const alphaR = director.represent("alpha")!;
-    const alphaP = alphaR.present({} as Context, {});
+test("representation present", async () => {
+    await director.prepare("alpha", new MarkdownSource("# Hello"));
+    const alphaR = await director.represent("alpha");
+    const alphaP = alphaR!.present({} as Context, {});
     expect(alphaP).toBeDefined();
 });
 
@@ -19,7 +19,7 @@ const gift = "Joy";
 <h1>{gift}</h1>
 `;
 test("render simple", async () => {
-    director.prepare("beta", new PartialSource(source1));
+    await director.prepare("beta", new PartialSource(source1));
     expect(
         await director.render("beta", {} as Context, {}, { trim: true }),
     ).toBe("<h1>Joy</h1>");
@@ -36,7 +36,7 @@ interface Attributes {
 </p>
 `;
 test("render attributes", async () => {
-    director.prepare("gamma", new PartialSource(source2));
+    await director.prepare("gamma", new PartialSource(source2));
     expect(
         await director.render(
             "gamma",
@@ -48,7 +48,7 @@ test("render attributes", async () => {
 });
 
 test("flow each", async () => {
-    director.prepare(
+    await director.prepare(
         "delta",
         new PartialSource(`<a mx-each={[1,2]} mx-as="i">{i}</a>`),
     );
@@ -57,7 +57,7 @@ test("flow each", async () => {
     ).toBe("<a>1</a><a>2</a>");
 });
 
-director.prepare(
+await director.prepare(
     "todo-list",
     new PartialSource(`
 const items = [
@@ -72,7 +72,7 @@ const items = [
 `),
 );
 
-director.prepare(
+await director.prepare(
     "todo-item",
     new PartialSource(`
 interface Attributes {
@@ -96,7 +96,7 @@ test("render todo list", async () => {
     );
 });
 
-director.prepare(
+await director.prepare(
     "slot-outer",
     new PartialSource(`
 const gift = "Joy";
@@ -109,7 +109,7 @@ const gift = "Joy";
 `),
 );
 
-director.prepare(
+await director.prepare(
     "slot-middle",
     new PartialSource(`
 <div class="outer">
@@ -118,7 +118,7 @@ director.prepare(
 `),
 );
 
-director.prepare(
+await director.prepare(
     "slot-inner",
     new PartialSource(`
 interface Attributes {

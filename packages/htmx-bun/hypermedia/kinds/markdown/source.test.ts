@@ -6,7 +6,7 @@ const source1 = `
 `;
 const target1 = `export const attributes = null;
 export const template = "<h1>Hello</h1>\\n";
-async function action() { return {}; }
+export async function action() { return {}; }
 `;
 test("compile", () => {
     const source = new MarkdownSource(source1);
