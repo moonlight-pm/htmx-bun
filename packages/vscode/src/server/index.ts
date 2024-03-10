@@ -22,7 +22,6 @@ connection.onInitialize(async (params) => {
         params,
         createTypeScriptProjectProviderFactory(typescript, diagnosticMessages),
         {
-            // watchFileExtensions: ["part"],
             getServicePlugins() {
                 return [
                     createHtmlService(),

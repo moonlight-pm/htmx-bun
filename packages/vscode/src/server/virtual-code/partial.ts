@@ -1,10 +1,12 @@
 import type { CodeMapping, VirtualCode } from "@volar/language-core";
 import type { IScriptSnapshot } from "typescript";
-import {
-    TextDocument,
-    getLanguageService as getHtmlLanguageService,
-} from "vscode-html-languageservice";
+// import {
+//     TextDocument,
+//     getLanguageService as getHtmlLanguageService,
+// } from "vscode-html-languageservice";
 import { SimpleVirtualCode } from "./simple";
+
+import { htmlStartIndex } from "htmx-bun/hypermedia/template";
 
 export class PartialVirtualCode implements VirtualCode {
     languageId = "partial";
@@ -38,23 +40,27 @@ export class PartialVirtualCode implements VirtualCode {
             },
         ];
         this.embeddedCodes = [];
-        const document = getHtmlLanguageService().parseHTMLDocument(
-            TextDocument.create("", "html", 0, text),
+        // const html = text.slice(htmlStartIndex(text));
+        this.embeddedCodes.push(
+            new SimpleVirtualCode("html", "html", htmlStartIndex(text), text),
         );
-        let i = 0;
-        this.embeddedCodes.push(new SimpleVirtualCode("html", "html", 0, text));
-        for (const root of document.roots) {
-            if (root.tag === "server" && root.startTagEnd && root.endTagStart) {
-                this.embeddedCodes[0].embeddedCodes.push(
-                    new SimpleVirtualCode(
-                        `server-block-${i}`,
-                        "typescript",
-                        root.startTagEnd,
-                        snapshot.getText(root.startTagEnd, root.endTagStart),
-                    ),
-                );
-                i++;
-            }
-        }
+        // const document = getHtmlLanguageService().parseHTMLDocument(
+        //     TextDocument.create("", "html", 0, text),
+        // );
+        // let i = 0;
+        // this.embeddedCodes.push(new SimpleVirtualCode("html", "html", 0, text));
+        // for (const root of document.roots) {
+        //     if (root.tag === "server" && root.startTagEnd && root.endTagStart) {
+        //         this.embeddedCodes[0].embeddedCodes.push(
+        //             new SimpleVirtualCode(
+        //                 `server-block-${i}`,
+        //                 "typescript",
+        //                 root.startTagEnd,
+        //                 snapshot.getText(root.startTagEnd, root.endTagStart),
+        //             ),
+        //         );
+        //         i++;
+        //     }
+        // }
     }
 }

@@ -1,18 +1,12 @@
 import * as serverProtocol from "@volar/language-server/protocol";
 import { createLabsInfo, getTsdk } from "@volar/vscode";
-import { Uri } from "vscode";
 import { LanguageClient, TransportKind } from "vscode-languageclient/node";
 
 let client: LanguageClient;
 
 export async function activate(context) {
     console.log("ACTIVATE");
-    const serverPath = Uri.joinPath(
-        context.extensionUri,
-        "dist",
-        "server",
-        "index.js",
-    ).fsPath;
+    const serverPath = `${context.extensionPath}/dist/server/index.js`;
     client = new LanguageClient(
         "partial",
         "htmx-bun Language Server",
