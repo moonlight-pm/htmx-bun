@@ -1,6 +1,6 @@
 import { afterAll } from "bun:test";
-import { mkdtempSync, rmdirSync } from "fs";
-import { tmpdir } from "os";
+import { mkdtempSync, rmdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 export function makeTemporaryDirectory() {
     const dir = mkdtempSync(`${tmpdir()}/htmx-bun-`);

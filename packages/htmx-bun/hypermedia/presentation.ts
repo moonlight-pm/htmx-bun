@@ -20,13 +20,23 @@ import {
 } from "./template";
 
 export class Presentation {
+    #attributes: Attributes;
+
     constructor(
         private readonly director: Director,
         protected readonly representation: Representation,
         readonly template: HtmlFragment,
-        protected readonly context: Context,
-        protected attributes: Attributes,
-    ) {}
+        readonly context: Context,
+        readonly variables: Record<string, string>,
+        attributes: Attributes,
+    ) {
+        this.#attributes = attributes;
+        this.context = context.withPresentation?.(this) || context;
+    }
+
+    get attributes() {
+        return this.#attributes;
+    }
 
     /**
      * Execute the action tied to this presentation with the contained server context
@@ -36,6 +46,7 @@ export class Presentation {
         this.coerceAttributes();
         Object.assign(
             this.template.scope,
+            this.variables,
             this.attributes,
             await this.representation.artifact.action(
                 this.context,
@@ -143,6 +154,6 @@ export class Presentation {
                 attributes[key] = this.attributes[key];
             }
         }
-        this.attributes = attributes;
+        this.#attributes = attributes;
     }
 }

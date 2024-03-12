@@ -1,44 +1,88 @@
+import { getReasonPhrase } from "http-status-codes";
 import { URL } from "node:url";
+import { Attributes } from "~/hypermedia";
+import { Presentation } from "~/hypermedia/presentation";
 import { Cookie, readCookie, writeCookie } from "./cookie";
+
+/**
+ * Information shared by any contexts created for this particular request.
+ */
+interface ContextFootball {
+    request: Request;
+    response?: Response;
+    url: URL;
+    cookie: Cookie;
+    form: Record<string, string>;
+    oobs: Oob[];
+    renderCanceled: boolean;
+}
 
 /**
  * A context encapsulates information about a request context for a view, and provides utilities
  * for manipulating it.
  */
 export class Context {
-    #request: Request;
-    #response?: Response;
-    #url: URL;
-    #cookie: Cookie;
-    #form: Record<string, string> = {};
-    #oobs: Oob[] = [];
-    #renderCanceled = false;
+    private readonly football: ContextFootball;
+    #attributes: Attributes;
+    #variables: Record<string, string>;
 
-    constructor(request: Request) {
-        this.#request = request;
-        this.#url = new URL(request.url);
-        this.#cookie = readCookie(request);
+    constructor(
+        requestOrFootball: Request | ContextFootball,
+        variables: Record<string, string> = {},
+        attributes: Attributes = {},
+    ) {
+        if (requestOrFootball instanceof Request) {
+            this.football = {
+                request: requestOrFootball,
+                url: new URL(requestOrFootball.url),
+                cookie: readCookie(requestOrFootball),
+                form: {},
+                oobs: [],
+                renderCanceled: false,
+            };
+        } else {
+            this.football = requestOrFootball;
+        }
+
+        this.#variables = variables;
+        this.#attributes = attributes;
+    }
+
+    withPresentation(presentation: Presentation): Context {
+        return new Context(
+            this.football,
+            presentation.variables,
+            presentation.attributes,
+        );
+    }
+
+    get attributes() {
+        return this.#attributes;
+    }
+
+    get variables() {
+        return this.#variables;
     }
 
     async loadForm() {
-        this.url.searchParams.forEach((value, name) => {
+        this.football.url.searchParams.forEach((value, name) => {
             this.form[name] = value;
         });
-        if (!["POST", "PUT", "PATCH"].includes(this.#request.method)) {
+        if (!["POST", "PUT", "PATCH"].includes(this.football.request.method)) {
             return;
         }
         if (
             ![
                 "application/x-www-form-urlencoded",
                 "multipart/form-data",
-            ].includes(this.#request.headers.get("Content-Type") ?? "")
+            ].includes(this.football.request.headers.get("Content-Type") ?? "")
         ) {
             return;
         }
         Object.assign(
             this.form,
             Object.fromEntries(
-                Array.from(await this.#request.formData()).filter(
+                Array.from(await this.football.request.formData()).filter(
                     ([key, value]) => typeof value === "string",
                 ),
             ),
@@ -46,44 +90,53 @@ export class Context {
     }
 
     get request() {
-        return this.#request;
+        return this.football.request;
     }
 
     set response(response: Response | undefined) {
         if (response) {
-            writeCookie(response, this.#cookie);
+            writeCookie(response, this.football.cookie);
         }
-        this.#response = response;
+        this.football.response = response;
     }
 
     get response() {
-        return this.#response;
+        return this.football.response;
     }
 
     get url() {
-        return this.#url;
+        return this.football.url;
     }
 
     get cookie() {
-        return this.#cookie;
+        return this.football.cookie;
     }
 
     get form() {
-        return this.#form;
+        return this.football.form;
     }
 
     set flash(message: string) {
-        this.#cookie.flash = message;
+        this.football.cookie.flash = message;
     }
 
     get flash(): string | undefined {
-        return this.#cookie.message as string | undefined;
+        const message = this.football.cookie.flash as string | undefined;
+        delete this.football.cookie.flash;
+        return message;
     }
 
     redirect(href: string) {
         this.response = new Response(null, {
             status: 302,
             headers: { Location: href },
+        });
+    }
+
+    status(status: number, message?: string) {
+        this.response = new Response(null, {
+            status,
+            statusText: message ?? getReasonPhrase(status),
         });
     }
 
@@ -95,11 +148,11 @@ export class Context {
      * @param attributes Attributes to pass to the tag.
      */
     oob(tag: string, attributes: Record<string, unknown> = {}) {
-        this.#oobs.push({ tag, attributes });
+        this.football.oobs.push({ tag, attributes });
     }
 
     get oobs() {
-        return this.#oobs;
+        return this.football.oobs;
     }
 
     /**
@@ -107,11 +160,11 @@ export class Context {
      * specified, will still be included in the response.
      */
     cancelRender() {
-        this.#renderCanceled = true;
+        this.football.renderCanceled = true;
     }
 
     get renderCanceled() {
-        return this.#renderCanceled;
+        return this.football.renderCanceled;
     }
 }
 

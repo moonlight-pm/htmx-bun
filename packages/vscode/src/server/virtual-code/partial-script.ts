@@ -37,9 +37,9 @@ export class PartialScriptVirtualCode implements VirtualCode {
                 generatedOffsets: [prefix.length],
                 lengths: [full.length],
                 data: {
-                    completion: false,
+                    completion: true,
                     format: false,
-                    navigation: false,
+                    navigation: true,
                     semantic: true,
                     structure: true,
                     verification: true,

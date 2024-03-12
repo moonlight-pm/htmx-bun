@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test";
-import { writeFileSync } from "fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { makeTemporaryDirectory } from "~/lib/test";
+import { Context } from "~/server/context";
 import { Director } from "./director";
 import { MarkdownSource } from "./kinds/markdown/source";
 
@@ -46,4 +47,11 @@ test("watch", async () => {
     // await Bun.sleep(100);
     // rep = await director.represent("patience");
     // expect(rep!.artifact.template).toBe("<h1>μακροθυμία</h1>\n");
+});
+
+test("test parameter tags", async () => {
+    mkdirSync(`${director.base}/param`, { recursive: true });
+    writeFileSync(`${director.base}/param/[id].part`, "<div>{id}</div>");
+    const html = await director.render("param-1", {} as Context);
+    expect(html).toBe("<div>1</div>\n");
 });

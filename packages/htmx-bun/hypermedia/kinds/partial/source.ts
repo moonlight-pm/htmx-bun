@@ -127,6 +127,12 @@ export class PartialSource extends Source {
                                 node,
                             );
                         }
+                        if (ts.isConditionalExpression(node.parent)) {
+                            return context.factory.createPropertyAccessExpression(
+                                context.factory.createIdentifier("$scope"),
+                                node,
+                            );
+                        }
                     }
                     return ts.visitEachChild(node, visit, context);
                 };

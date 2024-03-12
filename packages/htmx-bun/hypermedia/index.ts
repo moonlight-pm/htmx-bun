@@ -89,10 +89,10 @@ export interface Artifact {
  * instantiated throught the `present` method.
  */
 export class Representation {
-    private template: HtmlFragment;
+    protected template: HtmlFragment;
 
     constructor(
-        private readonly director: Director,
+        readonly director: Director,
         readonly tag: string,
         readonly artifact: Artifact,
         readonly path?: string,
@@ -109,15 +109,40 @@ export class Representation {
      * @returns
      */
     present(context: Context, attributes: Attributes = {}): Presentation {
-        // if (this.artifact.kind === "markdown") {
         const template = cloneHtml(this.template) as HtmlFragment;
         return new Presentation(
             this.director,
             this,
             template,
             context,
+            {},
             attributes,
         );
-        // }
+    }
+}
+
+export class VariableRepresentation extends Representation {
+    constructor(
+        representation: Representation,
+        readonly variables: Record<string, string>,
+    ) {
+        super(
+            representation.director,
+            representation.tag,
+            representation.artifact,
+            representation.path,
+        );
+    }
+
+    present(context: Context, attributes: Attributes = {}): Presentation {
+        const template = cloneHtml(this.template) as HtmlFragment;
+        return new Presentation(
+            this.director,
+            this,
+            template,
+            context,
+            this.variables,
+            attributes,
+        );
     }
 }
