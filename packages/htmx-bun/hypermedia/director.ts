@@ -4,13 +4,7 @@ import { resolveTag } from "~/lib/ai/resolve-tag";
 import { info, warn } from "~/lib/log";
 import { watch } from "~/lib/watch";
 import { Context } from "~/server/context";
-import {
-    Artifact,
-    Attributes,
-    Representation,
-    Source,
-    VariableRepresentation,
-} from ".";
+import { Artifact, Representation, Source, VariableRepresentation } from ".";
 import { MarkdownSource } from "./kinds/markdown/source";
 import { PartialSource } from "./kinds/partial/source";
 import { PrintHtmlOptions, htmlTags } from "./template";
@@ -155,8 +149,8 @@ export class Director {
      * @param attributes The attributes.
      * @returns
      */
-    async present(tag: string, context: Context, attributes: Attributes = {}) {
-        return (await this.represent(tag))?.present(context, attributes);
+    async present(tag: string, context: Context) {
+        return (await this.represent(tag))?.present(context);
     }
 
     /**
@@ -171,14 +165,13 @@ export class Director {
     async render(
         tag: string,
         context: Context,
-        attributes?: Attributes,
         options: Partial<PrintHtmlOptions> = {},
     ): Promise<string | undefined> {
         const rep = await this.represent(tag);
         if (!rep) {
             return;
         }
-        const pres = rep.present(context, attributes);
+        const pres = rep.present(context);
         await pres.activate();
         await pres.compose();
         pres.flatten();

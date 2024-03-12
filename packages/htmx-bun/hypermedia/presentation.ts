@@ -1,6 +1,6 @@
 import { warn } from "~/lib/log";
 import { Context } from "~/server/context";
-import { Attributes, Representation } from ".";
+import { Representation } from ".";
 import { Director } from "./director";
 import {
     expressDefinedAttributesToStrings,
@@ -20,38 +20,23 @@ import {
 } from "./template";
 
 export class Presentation {
-    #attributes: Attributes;
-
     constructor(
         private readonly director: Director,
         protected readonly representation: Representation,
         readonly template: HtmlFragment,
         readonly context: Context,
-        readonly variables: Record<string, string>,
-        attributes: Attributes,
-    ) {
-        this.#attributes = attributes;
-        this.context = context.withPresentation?.(this) || context;
-    }
-
-    get attributes() {
-        return this.#attributes;
-    }
+    ) {}
 
     /**
      * Execute the action tied to this presentation with the contained server context
      * and the attributes passed into this presentation instance.
      */
     async activate(): Promise<void> {
-        this.coerceAttributes();
+        this.context.coerceAttributes(this.representation.artifact.attributes);
         Object.assign(
             this.template.scope,
-            this.variables,
-            this.attributes,
-            await this.representation.artifact.action(
-                this.context,
-                this.attributes,
-            ),
+            this.context.attributes,
+            await this.representation.artifact.action(this.context),
         );
     }
 
@@ -112,7 +97,9 @@ export class Presentation {
                 node,
                 rep.artifact.attributes,
             );
-            const presentation = rep.present(this.context, attributes);
+            const presentation = rep.present(
+                this.context.withAttributes(attributes),
+            );
             await presentation.activate();
             await presentation.compose();
             presentation.replaceSlotWith(node.children);
@@ -131,29 +118,5 @@ export class Presentation {
             }
             return node;
         });
-    }
-
-    coerceAttributes() {
-        const attributes: Attributes = {};
-        if (!this.representation.artifact.attributes) {
-            return attributes;
-        }
-        for (const [key, type] of Object.entries(
-            this.representation.artifact.attributes,
-        )) {
-            if (type === "number") {
-                attributes[key] = Number(this.attributes[key]);
-            } else if (type === "boolean") {
-                attributes[key] = Boolean(this.attributes[key]);
-            } else {
-                // warn(
-                //     "presentation",
-                //     `Unknown attribute type: ${type}`,
-                //     this.representation.artifact.attributes,
-                // );
-                attributes[key] = this.attributes[key];
-            }
-        }
-        this.#attributes = attributes;
     }
 }

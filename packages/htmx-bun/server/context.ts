@@ -1,7 +1,6 @@
 import { getReasonPhrase } from "http-status-codes";
 import { URL } from "node:url";
-import { Attributes } from "~/hypermedia";
-import { Presentation } from "~/hypermedia/presentation";
+import { AttributeTypes, Attributes } from "~/hypermedia";
 import { Cookie, readCookie, writeCookie } from "./cookie";
 
 /**
@@ -21,15 +20,13 @@ interface ContextFootball {
  * A context encapsulates information about a request context for a view, and provides utilities
  * for manipulating it.
  */
-export class Context {
+export class Context<A extends Attributes = Attributes> {
     private readonly football: ContextFootball;
-    #attributes: Attributes;
-    #variables: Record<string, string>;
+    #attributes: A;
 
     constructor(
         requestOrFootball: Request | ContextFootball,
-        variables: Record<string, string> = {},
-        attributes: Attributes = {},
+        attributes: A = {} as A,
     ) {
         if (requestOrFootball instanceof Request) {
             this.football = {
@@ -43,25 +40,19 @@ export class Context {
         } else {
             this.football = requestOrFootball;
         }
-
-        this.#variables = variables;
         this.#attributes = attributes;
     }
 
-    withPresentation(presentation: Presentation): Context {
-        return new Context(
-            this.football,
-            presentation.variables,
-            presentation.attributes,
-        );
+    withAttributes(attributes: Attributes): Context {
+        return new Context(this.football, attributes);
+    }
+
+    coerceAttributes(types: AttributeTypes) {
+        this.#attributes = coerceAttributes(this.#attributes, types);
     }
 
     get attributes() {
         return this.#attributes;
-    }
-
-    get variables() {
-        return this.#variables;
     }
 
     async loadForm() {
@@ -174,4 +165,19 @@ export class Context {
 interface Oob {
     tag: string;
     attributes: Record<string, unknown>;
+}
+
+export function coerceAttributes<A extends Attributes = Attributes>(
+    attributes: A,
+    types: AttributeTypes,
+) {
+    const coerced: Record<string, unknown> = structuredClone(attributes);
+    for (const [key, type] of Object.entries(types)) {
+        if (type === "number") {
+            coerced[key] = Number(attributes[key]);
+        } else if (type === "boolean") {
+            coerced[key] = Boolean(attributes[key]);
+        }
+    }
+    return coerced as A;
 }

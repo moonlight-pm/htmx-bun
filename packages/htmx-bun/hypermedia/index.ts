@@ -77,7 +77,7 @@ export abstract class Source {
 export interface Artifact {
     kind: ArtifactKind;
     attributes: AttributeTypes;
-    action(context: Context, attributes: Attributes): Promise<Scope>;
+    action($context: Context): Promise<Scope>;
     template: string;
 }
 
@@ -108,16 +108,17 @@ export class Representation {
      * @param attributes The attribute values passed into this presentation instance.
      * @returns
      */
-    present(context: Context, attributes: Attributes = {}): Presentation {
+    present(context: Context): Presentation {
         const template = cloneHtml(this.template) as HtmlFragment;
-        return new Presentation(
-            this.director,
-            this,
-            template,
-            context,
-            {},
-            attributes,
-        );
+        if (this instanceof VariableRepresentation) {
+            return new Presentation(
+                this.director,
+                this,
+                template,
+                context.withAttributes(this.variables),
+            );
+        }
+        return new Presentation(this.director, this, template, context);
     }
 }
 
@@ -131,18 +132,6 @@ export class VariableRepresentation extends Representation {
             representation.tag,
             representation.artifact,
             representation.path,
-        );
-    }
-
-    present(context: Context, attributes: Attributes = {}): Presentation {
-        const template = cloneHtml(this.template) as HtmlFragment;
-        return new Presentation(
-            this.director,
-            this,
-            template,
-            context,
-            this.variables,
-            attributes,
         );
     }
 }
