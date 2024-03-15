@@ -1,3 +1,10 @@
+# !! htmx-bun is rebranded as [remedy](https://github.com/niarada/remedy) !!
+
+No furthur updates will happen here.
+
+----
+
+ 
  **htmx-bun** is a *Hypermedia Server* hosted on the [Bun](https://bun.sh) runtime with [Htmx](https://htmx.org) as a first-class integration.
 
 
