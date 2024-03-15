@@ -1,6 +1,6 @@
 # !! htmx-bun is rebranded as [remedy](https://github.com/niarada/remedy) !!
 
-No furthur updates will happen here.
+No further updates will happen here.  Please go to the [new repository](https://github.com/niarada/remedy).
 
 ----
 
